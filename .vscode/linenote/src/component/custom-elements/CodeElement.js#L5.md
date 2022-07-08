@@ -1,1 +1,0 @@
-You must render the children as the lowest leaf in your component.
