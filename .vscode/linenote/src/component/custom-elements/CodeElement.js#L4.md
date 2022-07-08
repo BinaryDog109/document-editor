@@ -1,0 +1,1 @@
+ You must mix the attributes into your component.
