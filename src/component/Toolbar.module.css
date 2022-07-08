@@ -1,0 +1,50 @@
+.toolbar {
+    padding: 1em 2em;
+    background-color: var(--secondary-color);
+    display: flex;
+    flex-flow: row wrap;
+    align-items: center;
+    gap: 1em;
+}
+button {
+    width: 1.75em;
+    height: 1.75em;
+    display: grid;
+    place-items: center;
+    border: none;
+    color: white;
+    background-color: var(--primary-color);
+    outline: none;
+    cursor: pointer;
+    border-radius: var(--default-border-radius);
+    transition: background-color 250ms;
+}
+button:hover {
+    background-color: var(--body-bg-color);
+}
+select {
+    padding: .5em;
+    border-radius: var(--default-border-radius);
+    outline: 1px solid var(--body-bg-color);
+    font-family: var(--default-font-family);
+}
+
+.input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: .5em;
+}
+.input-wrapper label {
+    color: white;
+}
+input[type=color] {
+    width: 2.5em;
+    height: 1.75em;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+}
+input[type=color]::-webkit-color-swatch {
+    border-radius: 1em;
+    box-shadow: 0 1px 2px 1px var(--primary-color);
+}
