@@ -81,11 +81,11 @@ export const Toolbar = () => {
                 
             </select>
             {/* <!-- Colors --> */}
-            <div className="input-wrapper">
+            <div className={styles["input-wrapper"]}>
                 <input type="color" name="" id="foreColor" className="adv-operation-button" />
                 <label htmlFor="font-color">Font Color</label>
             </div>
-            <div className="input-wrapper">
+            <div className={styles["input-wrapper"]}>
                 <input type="color" name="" id="backColor" className="adv-operation-button" />
                 <label htmlFor="highlight-color">Highlight Color</label>
             </div>

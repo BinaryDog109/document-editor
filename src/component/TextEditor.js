@@ -9,15 +9,31 @@ import { Editor, Transforms, Text } from "slate";
 import { Slate, Editable, withReact } from "slate-react";
 
 import { useRenderElement } from "../hooks/useRenderElement";
+import { useSelection } from "../hooks/useSelection";
+import { Toolbar } from "./Toolbar";
 
 export const TextEditor = ({ document, onChange }) => {
   const editor = useMemo(() => withReact(createEditor()), []);
   const { renderElement, renderLeaf } = useRenderElement(editor);
+  const [selection, setSelection] = useSelection(editor);
+
+  const onChangeHandler = useCallback(
+    (e) => {
+      const document = e;
+      onChange(document);
+      setSelection(editor.selection);
+    },
+    [onChange, setSelection, editor.selection]
+  );
 
   return (
-    <div className={styles["editable-container"]}>
-      {/* We use onChange so that our document will also change */}
-      <Slate editor={editor} value={document} onChange={onChange}>
+    /* We use onChange so that our document will also change. */
+    /* onChange will get called when selection changes (even if it is just moving the cursor) */
+    /* The event obj is an array of every node */
+    /* <Slate editor={editor} value={document} onChange={(e) => { console.log(editor.selection); onChange(e)}}> */
+    <Slate editor={editor} value={document} onChange={onChangeHandler}>
+      <Toolbar />
+      <div className={styles["editable-container"]}>
         <Editable
           renderElement={renderElement}
           renderLeaf={renderLeaf}
@@ -29,7 +45,7 @@ export const TextEditor = ({ document, onChange }) => {
               // The match option will traverse each node (node1, node2, ...).
               // We will check if the nodes along the path are text nodes (leaves) and has .code to be true
               const generator = Editor.nodes(editor, {
-                match: (n) => Text.isText(n) && n.code
+                match: (n) => Text.isText(n) && n.code,
               });
               const matchExists = !generator.next().done;
               Transforms.setNodes(
@@ -40,7 +56,7 @@ export const TextEditor = ({ document, onChange }) => {
             }
           }}
         />
-      </Slate>
-    </div>
+      </div>
+    </Slate>
   );
 };
