@@ -7,6 +7,8 @@ import { default as elementStyles } from "./Element.module.css";
 import { toggleStyle } from "../utils/EditorStyleUtils";
 
 export function useRenderElement(editor) {
+  editor.isInline = elem => ["link"].includes(elem.type)
+
   return { renderElement, renderLeaf, onKeyDown: onKeyDown(editor) };
 }
 function renderLeaf(props) {
@@ -23,6 +25,15 @@ function renderLeaf(props) {
   }
   if (leaf.underline) {
     el = <u>{el}</u>;
+  }
+  if (leaf.superscript) {
+    el = <sup>{el}</sup>;
+  }
+  if (leaf.subscript) {
+    el = <sub>{el}</sub>;
+  }
+  if (leaf.strikethrough) {
+    el = <strike>{el}</strike>;
   }
 
   return <span {...attributes}>{el}</span>;
@@ -68,6 +79,12 @@ function renderElement(props) {
           {children}
         </h5>
       );
+      case "link": 
+        return (<a onClick={(e) => {
+          if (e.ctrlKey) {
+            window.open(element.url, '_blank') 
+          }
+        }} {...attributes} className={elementStyles.user} href={element.url}>{children}</a>)
     default:
       // For the default case, we delegate to Slate's default rendering.
       return <DefaultElement {...props} />;

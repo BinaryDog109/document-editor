@@ -1,4 +1,4 @@
-import { Editor, Range, Transforms } from "slate";
+import { Editor, Element, Range, Transforms } from "slate";
 
 export const getActiveStyles = (editor) => {
   return new Set(Object.keys(Editor.marks(editor) || {}));
@@ -13,11 +13,12 @@ export const toggleStyle = (editor, style) => {
     Editor.removeMark(editor, style);
   } else {
     // console.log("adding " + style)
+    if (style === "superscript") Editor.removeMark(editor, "subscript")
+    if (style === "subscript") Editor.removeMark(editor, "superscript")
     Editor.addMark(editor, style, true);
-    console.log({ marks: Editor.marks(editor) });
+    // console.log({ marks: Editor.marks(editor) });
   }
 };
-
 
 export const getTopLevelBlockStyles = (editor) => {
   const selection = editor.selection;
@@ -60,4 +61,37 @@ export const setTopLevelBlockStyles = (editor, type) => {
       match: (n) => Editor.isBlock(editor, n),
     }
   );
+};
+
+// Link node
+export const isOnLinkNode = (editor, selection) => {
+  if (!selection) return;
+
+  const node = Editor.above(editor, {
+    at: selection,
+    match: (n) => n.type === "link",
+  });
+  return !!node;
+};
+
+export const toggleLinkNode = (editor) => {
+  if (!isOnLinkNode(editor, editor.selection)) {
+    if (Range.isCollapsed(editor.selection)) {
+      Transforms.insertNodes(editor, {
+        type: "link",
+        url: "#",
+        children: [{ text: "link" }],
+      });
+    } else {
+      Transforms.wrapNodes(
+        editor,
+        { type: "link", url: "#" },
+        { split: true, at: editor.selection }
+      );
+    }
+  } else {
+    Transforms.unwrapNodes(editor, {
+      match: (n) => Element.isElement(n) && n.type === "link",
+    });
+  }
 };

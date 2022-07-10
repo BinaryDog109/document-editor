@@ -1,5 +1,5 @@
 import styles from "./Toolbar.module.css";
-import { isStyleActive, toggleStyle, getTopLevelBlockStyles, setTopLevelBlockStyles } from "../utils/EditorStyleUtils";
+import { isStyleActive, toggleStyle, getTopLevelBlockStyles, setTopLevelBlockStyles, isOnLinkNode, toggleLinkNode } from "../utils/EditorStyleUtils";
 import { useSlateStatic } from "slate-react";
 
 export const Toolbar = ({ selection }) => {
@@ -49,14 +49,14 @@ export const Toolbar = ({ selection }) => {
       >
         <i className="fa-solid fa-code"></i>
       </button>
-      <button id="strikethrough" className={`operation-button format ${isStyleActive(editor, "strikethrough")? styles.active:''}`}>
+      <button onMouseDown={(e) => handleMouseDown(e, "strikethrough")} id="strikethrough" className={`operation-button format ${isStyleActive(editor, "strikethrough")? styles.active:''}`}>
         <i className="fa-solid fa-strikethrough"></i>
       </button>
 
-      <button id="superscript" className="operation-button script">
+      <button onMouseDown={(e) => handleMouseDown(e, "superscript")} id="superscript" className={`operation-button script ${isStyleActive(editor, "superscript")? styles.active:''}`}>
         <i className="fa-solid fa-superscript"></i>
       </button>
-      <button id="subscript" className="operation-button script">
+      <button onMouseDown={(e) => handleMouseDown(e, "subscript")} id="subscript" className={`operation-button script ${isStyleActive(editor, "subscript")? styles.active:''}`}>
         <i className="fa-solid fa-subscript"></i>
       </button>
       {/* <!-- List operations --> */}
@@ -74,11 +74,10 @@ export const Toolbar = ({ selection }) => {
         <i className="fa-solid fa-rotate-right"></i>
       </button> */}
       {/* <!-- Link operations --> */}
-      <button id="createLink" className="adv-operation-button">
+      <button onMouseDown={() => {
+        toggleLinkNode(editor)
+      }} id="createLink" className={`adv-operation-button ${isOnLinkNode(editor, editor.selection)? styles.active:''}`}>
         <i className="fa-solid fa-link"></i>
-      </button>
-      <button id="unlink" className="operation-button">
-        <i className="fa-solid fa-unlink"></i>
       </button>
 
       {/* <!-- Alignment --> */}

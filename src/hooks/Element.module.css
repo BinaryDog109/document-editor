@@ -1,3 +1,39 @@
 .user {
     font-weight: 400;
 }
+a.user {
+    position: relative;
+}
+a:link.user {
+    font-size: .9em;
+    background-color: transparent;
+    text-decoration-skip-ink: auto;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 1px;
+    text-decoration-line: underline;
+    color: var(--primary-color);
+    text-decoration: none;
+}
+a:hover.user {
+    cursor: pointer;
+    text-decoration: underline;
+}
+a.user::before {
+    content: "Ctrl + Click";
+    font-size: .8rem;
+    background-color: var(--body-bg-color);
+    color: var(--secondary-color);
+    padding: .2em;
+    border-radius: var(--default-border-radius);
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: max-content;
+    transform: translate(-50%, 100%);
+    opacity: 0;
+    transition: opacity 250ms ease .5s;
+    cursor: default;
+}
+a.user:hover::before {
+    opacity: 1;
+}
