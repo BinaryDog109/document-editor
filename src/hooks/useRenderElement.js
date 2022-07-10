@@ -62,6 +62,12 @@ function renderElement(props) {
           {children}
         </h4>
       );
+    case "h5":
+      return (
+        <h5 className={elementStyles.user} {...attributes}>
+          {children}
+        </h5>
+      );
     default:
       // For the default case, we delegate to Slate's default rendering.
       return <DefaultElement {...props} />;
@@ -72,14 +78,11 @@ function onKeyDown(editor) {
   return (event) => {
     if (isHotkey("mod+b", event)) {
       toggleStyle(editor, "bold");
-    }
-    else if (isHotkey("mod+i", event)) {
+    } else if (isHotkey("mod+i", event)) {
       toggleStyle(editor, "italic");
-    }
-    else if (isHotkey("mod+c", event)) {
+    } else if (isHotkey("mod+c", event)) {
       toggleStyle(editor, "code");
-    }
-    else if (isHotkey("mod+u", event)) {
+    } else if (isHotkey("mod+u", event)) {
       toggleStyle(editor, "underline");
     }
   };

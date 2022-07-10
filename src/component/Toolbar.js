@@ -1,13 +1,20 @@
 import styles from "./Toolbar.module.css";
-import { isStyleActive, toggleStyle } from "../utils/EditorStyleUtils";
+import { isStyleActive, toggleStyle, getTopLevelBlockStyles, setTopLevelBlockStyles } from "../utils/EditorStyleUtils";
 import { useSlateStatic } from "slate-react";
 
 export const Toolbar = ({ selection }) => {
   const editor = useSlateStatic();
+  const blockType = getTopLevelBlockStyles(editor)
+
   const handleMouseDown = (e, booleanStyle) => {
     e.preventDefault();
     toggleStyle(editor, booleanStyle);
   };
+  const onTopBlockStylesChange = e => {
+    const selectedStyle = e.target.value
+    if (selectedStyle === "multiple") return 
+    setTopLevelBlockStyles(editor, selectedStyle)
+  }
   return (
     <div className={styles.toolbar}>
       <button
@@ -53,7 +60,7 @@ export const Toolbar = ({ selection }) => {
         <i className="fa-solid fa-subscript"></i>
       </button>
       {/* <!-- List operations --> */}
-      <button id="insertOrderedList" className="operation-button">
+      {/* <button id="insertOrderedList" className="operation-button">
         <i className="fa-solid fa-list-ol"></i>
       </button>
       <button id="insertUnorderedList" className="operation-button">
@@ -65,7 +72,7 @@ export const Toolbar = ({ selection }) => {
       </button>
       <button id="redo" className="operation-button">
         <i className="fa-solid fa-rotate-right"></i>
-      </button>
+      </button> */}
       {/* <!-- Link operations --> */}
       <button id="createLink" className="adv-operation-button">
         <i className="fa-solid fa-link"></i>
@@ -75,7 +82,7 @@ export const Toolbar = ({ selection }) => {
       </button>
 
       {/* <!-- Alignment --> */}
-      <button id="justifyLeft" className="align operation-button">
+      {/* <button id="justifyLeft" className="align operation-button">
         <i className="fa-solid fa-align-left"></i>
       </button>
       <button id="justifyCenter" className="align operation-button">
@@ -93,16 +100,17 @@ export const Toolbar = ({ selection }) => {
       </button>
       <button id="outdent" className="spacing operation-button">
         <i className="fa-solid fa-outdent"></i>
-      </button>
+      </button> */}
 
       {/* <!-- Headings --> */}
-      <select className="adv-operation-button" name="" id="formatBlock">
-        <option value="h1">h1</option>
-        <option value="h2">h2</option>
-        <option value="h3">h3</option>
-        <option value="h4">h4</option>
-        <option value="h5">h5</option>
-        <option value="h6">h6</option>
+      <select onChange={onTopBlockStylesChange} value={blockType || "multiple"} className="adv-operation-button" name="" id="formatBlock">
+        <option value="paragraph">Paragraph</option>
+        <option value="h1">H1</option>
+        <option value="h2">H2</option>
+        <option value="h3">H3</option>
+        <option value="h4">H4</option>
+        <option value="h5">H5</option>
+        <option disabled value="multiple">Unknown</option>
       </select>
       {/* <!-- Fonts --> */}
       <select className="adv-operation-button" name="" id="fontName"></select>
