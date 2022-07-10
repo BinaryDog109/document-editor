@@ -14,7 +14,7 @@ import { Toolbar } from "./Toolbar";
 
 export const TextEditor = ({ document, onChange }) => {
   const editor = useMemo(() => withReact(createEditor()), []);
-  const { renderElement, renderLeaf } = useRenderElement(editor);
+  const { renderElement, renderLeaf, onKeyDown } = useRenderElement(editor);
   const [selection, setSelection] = useSelection(editor);
 
   const onChangeHandler = useCallback(
@@ -38,6 +38,7 @@ export const TextEditor = ({ document, onChange }) => {
         <Editable
           renderElement={renderElement}
           renderLeaf={renderLeaf}
+          onKeyDown={onKeyDown}
         />
       </div>
     </Slate>
