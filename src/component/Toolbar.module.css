@@ -24,7 +24,7 @@ button {
     border-radius: var(--default-border-radius);
     transition: background-color 250ms;
 }
-button:hover {
+button:hover, button.active {
     background-color: var(--body-bg-color);
 }
 select {

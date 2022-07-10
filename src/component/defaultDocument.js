@@ -10,6 +10,7 @@ export const defaultDocument = [
   {
     type: "paragraph",
     children: [
+      { text: "Hello" },
         {text: "Wow I am bold!", bold: true},
         {text: " Wow I am italic!", italic: true}, 
         { text: "Bold and underlined text.", bold: true, underline: true },

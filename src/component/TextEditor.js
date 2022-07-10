@@ -19,6 +19,7 @@ export const TextEditor = ({ document, onChange }) => {
 
   const onChangeHandler = useCallback(
     (e) => {
+      console.log("document change!", e)
       const document = e;
       onChange(document);
       setSelection(editor.selection);
@@ -32,29 +33,11 @@ export const TextEditor = ({ document, onChange }) => {
     /* The event obj is an array of every node */
     /* <Slate editor={editor} value={document} onChange={(e) => { console.log(editor.selection); onChange(e)}}> */
     <Slate editor={editor} value={document} onChange={onChangeHandler}>
-      <Toolbar />
+      <Toolbar selection={selection} />
       <div className={styles["editable-container"]}>
         <Editable
           renderElement={renderElement}
           renderLeaf={renderLeaf}
-          onKeyDown={(event) => {
-            if (event.key === "`" && event.ctrlKey) {
-              event.preventDefault();
-              // It will traverse from root to the current node you are at, like a tree, and return the generator
-              // (in terms of [[node1, postiion], [node2, position2], ...])
-              // The match option will traverse each node (node1, node2, ...).
-              // We will check if the nodes along the path are text nodes (leaves) and has .code to be true
-              const generator = Editor.nodes(editor, {
-                match: (n) => Text.isText(n) && n.code,
-              });
-              const matchExists = !generator.next().done;
-              Transforms.setNodes(
-                editor,
-                { code: matchExists ? false : true },
-                { match: (n) => Text.isText(n), split: true }
-              );
-            }
-          }}
         />
       </div>
     </Slate>
