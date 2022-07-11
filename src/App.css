@@ -4,6 +4,7 @@
   --button-hover-color: hsl(0, 0%, 50%);
   --primary-color: #0099FA;
   --secondary-color: #EFFAFF;
+  --info-color: #F1F1E6;
   --default-border-radius: 0.15em;
   --default-font-family: "DM Mono", monospace;
   --default-line-height: 1.5;
@@ -25,4 +26,7 @@ body {
   display: grid;
   grid-template-rows: auto 1fr;
   place-items: center;
+}
+.editor {
+  position: relative;
 }

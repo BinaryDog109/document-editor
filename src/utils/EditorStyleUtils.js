@@ -1,5 +1,6 @@
 import { Editor, Element, Range, Transforms } from "slate";
 
+// Leaf styles
 export const getActiveStyles = (editor) => {
   return new Set(Object.keys(Editor.marks(editor) || {}));
 };
@@ -20,6 +21,7 @@ export const toggleStyle = (editor, style) => {
   }
 };
 
+// Top level block element styles
 export const getTopLevelBlockStyles = (editor) => {
   const selection = editor.selection;
   if (selection == null) {
@@ -34,7 +36,7 @@ export const getTopLevelBlockStyles = (editor) => {
 
   // An optimised way
   const [start, end] = Range.edges(selection);
-  let startTopNodeIndex = start.path[0];
+  let startTopNodeIndex = start.path[0]; // We pick the index of the top level ndoe
   const endTopNodeIndex = end.path[0];
   let blockType = null;
   while (startTopNodeIndex <= endTopNodeIndex) {
@@ -63,7 +65,7 @@ export const setTopLevelBlockStyles = (editor, type) => {
   );
 };
 
-// Link node
+// Link node detection
 export const isOnLinkNode = (editor, selection) => {
   if (!selection) return;
 

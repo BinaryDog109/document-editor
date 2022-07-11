@@ -18,109 +18,113 @@ export const Toolbar = ({ selection }) => {
   return (
     <div className={styles.toolbar}>
       <button
+      title="Bold"
         id="bold"
         onMouseDown={
           // we use onMouseDown instead of onClick because
           // clilicking will make Slate turns the selection to null when the editor loses focus in any way.
           (e) => handleMouseDown(e, "bold")
         }
-        className={`operation-button format ${isStyleActive(editor, "bold")? styles.active:''}`}
+        className={`${styles["operation-button"]} format ${isStyleActive(editor, "bold")? styles.active:''}`}
       >
         <i className="fa-solid fa-bold"></i>
       </button>
       <button
+      title="Italic"
         id="italic"
         onMouseDown={(e) => handleMouseDown(e, "italic")}
-        className={`operation-button format ${isStyleActive(editor, "italic")? styles.active:''}`}
+        className={`${styles["operation-button"]} format ${isStyleActive(editor, "italic")? styles.active:''}`}
       >
         <i className="fa-solid fa-italic"></i>
       </button>
       <button
+      title="Underline"
         id="underline"
         onMouseDown={(e) => handleMouseDown(e, "underline")}
-        className={`operation-button format ${isStyleActive(editor, "underline")? styles.active:''}`}
+        className={`${styles["operation-button"]} format ${isStyleActive(editor, "underline")? styles.active:''}`}
       >
         <i className="fa-solid fa-underline"></i>
       </button>
       <button
+      title="Code"
         id="code"
         onMouseDown={(e) => handleMouseDown(e, "code")}
-        className={`operation-button format ${isStyleActive(editor, "code")? styles.active:''}`}
+        className={`${styles["operation-button"]} format ${isStyleActive(editor, "code")? styles.active:''}`}
       >
         <i className="fa-solid fa-code"></i>
       </button>
-      <button onMouseDown={(e) => handleMouseDown(e, "strikethrough")} id="strikethrough" className={`operation-button format ${isStyleActive(editor, "strikethrough")? styles.active:''}`}>
+      <button title="Strikethrough" onMouseDown={(e) => handleMouseDown(e, "strikethrough")} id="strikethrough" className={`${styles["operation-button"]} format ${isStyleActive(editor, "strikethrough")? styles.active:''}`}>
         <i className="fa-solid fa-strikethrough"></i>
       </button>
 
-      <button onMouseDown={(e) => handleMouseDown(e, "superscript")} id="superscript" className={`operation-button script ${isStyleActive(editor, "superscript")? styles.active:''}`}>
+      <button title="Superscript" onMouseDown={(e) => handleMouseDown(e, "superscript")} id="superscript" className={`${styles["operation-button"]} script ${isStyleActive(editor, "superscript")? styles.active:''}`}>
         <i className="fa-solid fa-superscript"></i>
       </button>
-      <button onMouseDown={(e) => handleMouseDown(e, "subscript")} id="subscript" className={`operation-button script ${isStyleActive(editor, "subscript")? styles.active:''}`}>
+      <button title="Subscript" onMouseDown={(e) => handleMouseDown(e, "subscript")} id="subscript" className={`${styles["operation-button"]} script ${isStyleActive(editor, "subscript")? styles.active:''}`}>
         <i className="fa-solid fa-subscript"></i>
       </button>
       {/* <!-- List operations --> */}
-      {/* <button id="insertOrderedList" className="operation-button">
+      {/* <button id="insertOrderedList" className="${styles["operation-button"]}">
         <i className="fa-solid fa-list-ol"></i>
       </button>
-      <button id="insertUnorderedList" className="operation-button">
+      <button id="insertUnorderedList" className="${styles["operation-button"]}">
         <i className="fa-solid fa-list-ul"></i>
       </button>
 
-      <button id="undo" className="operation-button">
+      <button id="undo" className="${styles["operation-button"]}">
         <i className="fa-solid fa-rotate-left"></i>
       </button>
-      <button id="redo" className="operation-button">
+      <button id="redo" className="${styles["operation-button"]}">
         <i className="fa-solid fa-rotate-right"></i>
       </button> */}
       {/* <!-- Link operations --> */}
-      <button onMouseDown={() => {
+      <button title="Toggle Link" onMouseDown={() => {
         toggleLinkNode(editor)
-      }} id="createLink" className={`adv-operation-button ${isOnLinkNode(editor, editor.selection)? styles.active:''}`}>
+      }} id="createLink" className={`${styles["operation-button"]} ${isOnLinkNode(editor, editor.selection)? styles.active:''}`}>
         <i className="fa-solid fa-link"></i>
       </button>
 
       {/* <!-- Alignment --> */}
-      {/* <button id="justifyLeft" className="align operation-button">
+      {/* <button id="justifyLeft" className="align ${styles["operation-button"]}">
         <i className="fa-solid fa-align-left"></i>
       </button>
-      <button id="justifyCenter" className="align operation-button">
+      <button id="justifyCenter" className="align ${styles["operation-button"]}">
         <i className="fa-solid fa-align-center"></i>
       </button>
-      <button id="justifyRight" className="align operation-button">
+      <button id="justifyRight" className="align ${styles["operation-button"]}">
         <i className="fa-solid fa-align-right"></i>
       </button>
-      <button id="justifyFull" className="align operation-button">
+      <button id="justifyFull" className="align ${styles["operation-button"]}">
         <i className="fa-solid fa-align-justify"></i>
       </button>
 
-      <button id="indent" className="spacing operation-button">
+      <button id="indent" className="spacing ${styles["operation-button"]}">
         <i className="fa-solid fa-indent"></i>
       </button>
-      <button id="outdent" className="spacing operation-button">
+      <button id="outdent" className="spacing ${styles["operation-button"]}">
         <i className="fa-solid fa-outdent"></i>
       </button> */}
 
       {/* <!-- Headings --> */}
-      <select onChange={onTopBlockStylesChange} value={blockType || "multiple"} className="adv-operation-button" name="" id="formatBlock">
+      <select onChange={onTopBlockStylesChange} value={blockType || "multiple"} className="operation-selection" name="" id="formatBlock">
         <option value="paragraph">Paragraph</option>
-        <option value="h1">H1</option>
-        <option value="h2">H2</option>
-        <option value="h3">H3</option>
-        <option value="h4">H4</option>
-        <option value="h5">H5</option>
+        <option value="h1">Heading 1</option>
+        <option value="h2">Heading 2</option>
+        <option value="h3">Heading 3</option>
+        <option value="h4">Heading 4</option>
+        <option value="h5">Heading 5</option>
         <option disabled value="multiple">Unknown</option>
       </select>
       {/* <!-- Fonts --> */}
-      <select className="adv-operation-button" name="" id="fontName"></select>
-      <select className="adv-operation-button" name="" id="fontSize"></select>
+      <select className="operation-selection" name="" id="fontName"></select>
+      <select className="operation-selection" name="" id="fontSize"></select>
       {/* <!-- Colors --> */}
       <div className={styles["input-wrapper"]}>
         <input
           type="color"
           name=""
           id="foreColor"
-          className="adv-operation-button"
+          className="operation-input"
         />
         <label htmlFor="font-color">Font Color</label>
       </div>
@@ -129,7 +133,7 @@ export const Toolbar = ({ selection }) => {
           type="color"
           name=""
           id="backColor"
-          className="adv-operation-button"
+          className="operation-input"
         />
         <label htmlFor="highlight-color">Highlight Color</label>
       </div>

@@ -1,0 +1,41 @@
+.link-card {
+    background-color: whitesmoke;
+    padding: 1em;
+    border-radius: var(--default-border-radius);
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    gap: .5em;
+    box-shadow: 2px 2px 2px 0 var(--body-bg-color);
+    z-index: 1;
+    opacity: 0;
+    animation: fadeIn 250ms forwards;
+}
+@keyframes fadeIn {
+    100% {
+        opacity: 1;
+    }
+}
+.link-card-action {
+    align-self: flex-end;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5em;
+}
+.link-card button {
+    width: max-content;
+    padding: .5em;
+}
+.link-card button:disabled {
+    background-color: grey;
+    cursor: not-allowed;
+}
+.link-card input {
+    border: none;
+    font-size: 1em;
+    padding: .5em;
+    color: var(--body-bg-color);
+}
+.link-card input:focus {
+    outline-color: var(--body-bg-color);
+}

@@ -2,8 +2,10 @@
     padding: 1em 2em;
     border-radius: var(--default-border-radius);
     background-color: var(--secondary-color);
+    justify-self: stretch;
     display: flex;
     flex-flow: row wrap;
+    justify-content: center;
     align-items: center;
     gap: 1em;
     position: sticky;
@@ -12,26 +14,33 @@
     font-size: .8em;
 }
 button {
-    width: 1.75em;
-    height: 1.75em;
-    display: grid;
-    place-items: center;
-    border: none;
-    color: white;
     background-color: var(--primary-color);
-    outline: none;
-    cursor: pointer;
-    border-radius: var(--default-border-radius);
+    color: white;
     transition: background-color 250ms;
+    border-radius: var(--default-border-radius);
+    cursor: pointer;
+    border: none;
+    outline: none;
 }
 button:hover, button.active {
     background-color: var(--body-bg-color);
 }
+.operation-button {
+    width: 2em;
+    height: 2em;
+    display: grid;
+    place-items: center;
+
+}
+
 select {
     padding: .5em;
     border-radius: var(--default-border-radius);
     outline: 1px solid var(--body-bg-color);
     font-family: var(--default-font-family);
+    background-color: var(--info-color);
+    color: var(--primary-color);
+    border-width: 0px;
 }
 
 .input-wrapper {

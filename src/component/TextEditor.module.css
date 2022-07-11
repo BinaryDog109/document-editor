@@ -1,10 +1,11 @@
 .editable-container {
     font-family: "Calibri";
-    margin: 1em 0;
-    width: min(816px, 100%);
+    font-size: 1.2rem;
+    margin: 1rem 0;
+    width: min(850px, 100%);
     background-color: var(--container-bg-color);   
     border-radius: var(--default-border-radius);
-    text-align: center;
+    /* text-align: center; */
     padding: 1em 2em;
     min-height: 1058px;
     /* MUST. Prevent text overflow. Break at every char. The default is breaking word */
