@@ -1,4 +1,5 @@
-import { Editor, Element, Range, Transforms } from "slate";
+import isUrl from "is-url";
+import { Editor, Element, Point, Range, Text, Transforms } from "slate";
 
 // Leaf styles
 export const getActiveStyles = (editor) => {
@@ -14,8 +15,8 @@ export const toggleStyle = (editor, style) => {
     Editor.removeMark(editor, style);
   } else {
     // console.log("adding " + style)
-    if (style === "superscript") Editor.removeMark(editor, "subscript")
-    if (style === "subscript") Editor.removeMark(editor, "superscript")
+    if (style === "superscript") Editor.removeMark(editor, "subscript");
+    if (style === "subscript") Editor.removeMark(editor, "superscript");
     Editor.addMark(editor, style, true);
     // console.log({ marks: Editor.marks(editor) });
   }
@@ -73,7 +74,7 @@ export const isOnLinkNode = (editor, selection) => {
   const [node] = Editor.node(editor, selection);
   // console.log(parent, node)
 
-  return node.type==="link" || parent.type === "link";
+  return node.type === "link" || parent.type === "link";
 };
 
 export const toggleLinkNode = (editor) => {
@@ -94,6 +95,60 @@ export const toggleLinkNode = (editor) => {
   } else {
     Transforms.unwrapNodes(editor, {
       match: (n) => Element.isElement(n) && n.type === "link",
+    });
+  }
+};
+
+// Link text detection
+export const detectLinkText = (editor) => {
+  if (!editor.selection || !Range.isCollapsed(editor.selection)) return;
+  if (isOnLinkNode(editor, editor.selection)) return;
+
+  const [node, path] = Editor.node(editor, editor.selection);
+  // Is it neccesary?
+  if (!Text.isText(node)) return;
+
+  const cursorPoint = editor.selection.anchor;
+  const pointOfLastCharacter = Editor.before(editor, editor.selection, {
+    unit: "character",
+  });
+  const lastChar = Editor.string(
+    editor,
+    Editor.range(editor, pointOfLastCharacter, cursorPoint)
+  );
+  if (lastChar !== " ") return;
+  // Look for the last word before space
+  // ! We cannot use Editor.before(...{unit: 'word'}) because it will look for words separated by '.' as well.
+  // const wordStartingPoint = Editor.before(editor, pointOfLastCharacter, {unit: "word"})
+  //  When a new link node gets created, the document changes and will run detectLinkText again. 
+  //  We must need startOfTextNode because it can avoid duplicated link node assignment in that case.
+  const startOfTextNode = Editor.point(editor, path, {
+    edge: "start",
+  });
+  console.log({startOfTextNode})
+  let start = Editor.before(editor, pointOfLastCharacter, {
+    unit: "character",
+  });
+  let end = pointOfLastCharacter;
+  while (
+    Editor.string(editor, Editor.range(editor, start, end)) !== " " &&
+    !Point.isBefore(start, startOfTextNode)
+  ) {
+    end = start;
+    start = Editor.before(editor, end, { unit: "character" });
+  }
+  const lastWordRange = Editor.range(editor, end, pointOfLastCharacter);
+  const lastWord = Editor.string(editor, lastWordRange);
+  // If lastWord is a url, convert it into a link node
+  console.log({ lastWord, lastWordRange });
+  if (isUrl(lastWord)) {
+    console.log(lastWord);
+    Promise.resolve().then(() => {
+      Transforms.wrapNodes(
+        editor,
+        { type: "link", url: lastWord, children: [{ text: lastWord }] },
+        { split: true, at: lastWordRange }
+      );
     });
   }
 };

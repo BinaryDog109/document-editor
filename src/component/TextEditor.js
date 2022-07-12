@@ -12,7 +12,7 @@ import { useRenderElement } from "../hooks/useRenderElement";
 import { useSelection } from "../hooks/useSelection";
 import { Toolbar } from "./Toolbar";
 import { LinkUpdateCard } from "./LinkUpdateCard";
-import { isOnLinkNode } from "../utils/EditorStyleUtils";
+import { detectLinkText, isOnLinkNode } from "../utils/EditorStyleUtils";
 
 export const TextEditor = ({ document, onChange, editorRef }) => {
   const editor = useMemo(() => withReact(createEditor()), []);
@@ -21,12 +21,13 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
 
   const onChangeHandler = useCallback(
     (e) => {
-      console.log("document change!", e)
+      console.log("document change!",editor.selection.anchor, e)
+      detectLinkText(editor)
       const document = e;
       onChange(document);
       setSelection(editor.selection);
     },
-    [onChange, setSelection, editor.selection]
+    [onChange, setSelection, editor]
   );
     // If when we edit the link on the card the selection loses, we still remember the previous one.
     // However, when I tested it, the selection does not lose but the cursor is gone.
