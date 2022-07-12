@@ -16,14 +16,14 @@ export const defaultDocument = [
     children: [{ text: "Welcome user!" }],
   },
   {
-    type: "paragraph", name: "yty",
+    type: "paragraph",
     children: [
       { text: "Hello, I am normal text. " },
       { text: "Wow I am bold! ", bold: true },
       { text: "Some text before a link. " },
       {
         type: "link",
-        url: "https://www.google.com", name: "yty",
+        url: "https://www.google.com",
         children: [
           { text: "Link text, " },
           { text: "Bold text inside link. ", bold: true },

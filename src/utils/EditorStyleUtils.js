@@ -69,11 +69,11 @@ export const setTopLevelBlockStyles = (editor, type) => {
 export const isOnLinkNode = (editor, selection) => {
   if (!selection) return;
 
-  const node = Editor.above(editor, {
-    at: selection,
-    match: (n) => n.type === "link",
-  });
-  return !!node;
+  const [parent] = Editor.parent(editor, selection);
+  const [node] = Editor.node(editor, selection);
+  // console.log(parent, node)
+
+  return node.type==="link" || parent.type === "link";
 };
 
 export const toggleLinkNode = (editor) => {

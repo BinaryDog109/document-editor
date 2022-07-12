@@ -29,6 +29,7 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
     [onChange, setSelection, editor.selection]
   );
     // If when we edit the link on the card the selection loses, we still remember the previous one.
+    // However, when I tested it, the selection does not lose but the cursor is gone.
   const linkSelection = (!selection && isOnLinkNode(editor, prevSelection))? prevSelection :
     isOnLinkNode(editor, selection)? selection : null;
   return (

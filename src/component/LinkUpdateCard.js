@@ -12,16 +12,22 @@ export const LinkUpdateCard = ({ editorDOM, linkSelection }) => {
 
   const editorX = editorDOM.getBoundingClientRect().x;
   const editorY = editorDOM.getBoundingClientRect().y;
-  const [linkNode, path] = Editor.above(editor, {
-    match: (n) => n.type === "link",
-    at: linkSelection
-  });
-  const [linkNodeURL, setLinkNodeURL] = useState(linkNode.url)
-  
+
+  let [linkNode, path] = Editor.parent(editor, linkSelection);
+  const [node, nodePath] = Editor.node(editor, linkSelection);
+  // if select in range of all the text in a link node (considered to be selecting the link node)
+  if (linkNode.type !== "link" && node.type === "link") {
+    linkNode = node;
+    path = nodePath;
+  }
+
+  const [linkNodeURL, setLinkNodeURL] = useState(linkNode.url);
+  // console.log({linkNodeURL, linkNode})
   useEffect(() => {
-    // When user jumps between different links
-    setLinkNodeURL(linkNode.url)
-  }, [linkNode])
+    // When user jumps between different links or select in range of all the text in a link node (considered to be selecting the link node)
+    // Otherwise the state will not change
+    setLinkNodeURL(linkNode.url);
+  }, [linkNode]);
   useEffect(() => {
     //   run after render so the ref works
     const linkCardDOM = linkCardRef.current;
@@ -30,17 +36,24 @@ export const LinkUpdateCard = ({ editorDOM, linkSelection }) => {
     linkCardDOM.style.left = `${x - editorX}px`;
     linkCardDOM.style.top = `${y + height - editorY}px`;
   }, [editor, editorY, editorX, linkNode]);
-  const onUpdate = e => {
+  const onUpdate = (e) => {
     Transforms.setNodes(editor, { url: linkNodeURL }, { at: path });
-  }
-  const onChange = e => {
-    setLinkNodeURL(e.target.value)
-  }
+  };
+  const onChange = (e) => {
+    setLinkNodeURL(e.target.value);
+  };
   return (
     <div ref={linkCardRef} className={styles["link-card"]}>
-      <input placeholder="Enter a URL..." type="url" value={linkNodeURL} onChange={onChange} />
+      <input
+        placeholder="Enter a URL..."
+        type="url"
+        value={linkNodeURL || ""}
+        onChange={onChange}
+      />
       <div className={styles["link-card-action"]}>
-        <button onClick={onUpdate} disabled={!isUrl(linkNodeURL)}>Update</button>
+        <button onClick={onUpdate} disabled={!isUrl(linkNodeURL)}>
+          Update
+        </button>
       </div>
     </div>
   );
