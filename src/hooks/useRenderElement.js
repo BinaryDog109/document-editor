@@ -5,9 +5,14 @@ import { DefaultElement } from "slate-react";
 import { default as leafStyles } from "./Leaf.module.css";
 import { default as elementStyles } from "./Element.module.css";
 import { toggleStyle } from "../utils/EditorStyleUtils";
+import { Image } from "../component/Image";
 
 export function useRenderElement(editor) {
-  editor.isInline = elem => ["link"].includes(elem.type)
+  editor.isInline = (elem) => ["link"].includes(elem.type);
+  const { isVoid } = editor;
+  editor.isVoid = (element) => {
+    return ["image"].includes(element.type) || isVoid(element);
+  };
 
   return { renderElement, renderLeaf, onKeyDown: onKeyDown(editor) };
 }
@@ -79,12 +84,23 @@ function renderElement(props) {
           {children}
         </h5>
       );
-      case "link": 
-        return (<a onClick={(e) => {
-          if (e.ctrlKey) {
-            window.open(element.url, '_blank') 
-          }
-        }} {...attributes} className={elementStyles.user} href={element.url}>{children}</a>)
+    case "link":
+      return (
+        <a
+          onClick={(e) => {
+            if (e.ctrlKey) {
+              window.open(element.url, "_blank");
+            }
+          }}
+          {...attributes}
+          className={elementStyles.user}
+          href={element.url}
+        >
+          {children}
+        </a>
+      );
+    case "img":
+      return <Image {...props} />;
     default:
       // For the default case, we delegate to Slate's default rendering.
       return <DefaultElement {...props} />;

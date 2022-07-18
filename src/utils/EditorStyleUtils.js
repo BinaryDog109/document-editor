@@ -125,7 +125,6 @@ export const detectLinkText = (editor) => {
   const startOfTextNode = Editor.point(editor, path, {
     edge: "start",
   });
-  console.log({startOfTextNode})
   let start = Editor.before(editor, pointOfLastCharacter, {
     unit: "character",
   });
@@ -140,7 +139,6 @@ export const detectLinkText = (editor) => {
   const lastWordRange = Editor.range(editor, end, pointOfLastCharacter);
   const lastWord = Editor.string(editor, lastWordRange);
   // If lastWord is a url, convert it into a link node
-  console.log({ lastWord, lastWordRange });
   if (isUrl(lastWord)) {
     console.log(lastWord);
     Promise.resolve().then(() => {

@@ -35,4 +35,15 @@ export const defaultDocument = [
       { text: "is a variable. " },
     ],
   },
+  {
+    type: "img",
+    url: "https://images.unsplash.com/photo-1657391292533-06f714e2d286?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80",
+    caption: "Stuff",
+    // Void elem needs to have some chilren for SlateJS to treat it as a selection point. Otherwise it will throw an error
+    children: [{text: ''}]
+  },
+  {
+    type: "paragraph",
+    children: [{text: ''}]
+  }
 ];
