@@ -54,7 +54,7 @@ export const useWebRTC = (socket) => {
         console.log(`PeerConnection created on callEE side`)
       });
     }
-    if (pc) {
+    if (pc && !hasHandshakeCompleted) {
       socket.on("answer", async (payload) => {
         await handleReceiveAnswer(pc, payload);
         sethasHandshakeCompleted(true)
