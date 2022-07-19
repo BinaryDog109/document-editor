@@ -1,0 +1,11 @@
+.room-status {
+    margin-bottom: 1em;
+}
+.room-status span {
+    font-size: 1rem;
+    border-radius: 3em;
+    padding: .5em;
+    margin-right: 10px;
+    color: white;
+    font-weight: 500;
+}

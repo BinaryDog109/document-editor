@@ -1,0 +1,43 @@
+.chat-container {
+  position: relative;
+  padding: 0.2em 0.5em;
+  background-color: var(--secondary-color);
+  border-radius: var(--default-border-radius);
+  position: fixed;
+  bottom: 0;
+  right: 1em;
+  width: 100%;
+  max-width: 300px;
+  height: 90%;
+  max-height: 600px;
+  z-index: 1;
+  transform: translateY(95%);
+  transition: transform 250ms;
+}
+.expand {
+  transform: translateY(0%);
+}
+
+.chat-content {
+  margin-top: 2em;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.title {
+  cursor: pointer;
+}
+.chat-content p {
+  border-radius: var(--default-border-radius);
+  padding: 0.5em;
+}
+p.remote {
+  background-color: var(--body-bg-color);
+  align-self: flex-start;
+  color: white;
+}
+p.me {
+  background-color: var(--primary-color);
+  align-self: flex-end;
+  color: white;
+}

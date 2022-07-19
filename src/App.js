@@ -3,11 +3,11 @@ import "./App.css";
 import { defaultDocument } from "./component/defaultDocument";
 import { Navbar } from "./component/Navbar";
 import { TextEditor } from "./component/TextEditor";
-import { Toolbar } from "./component/Toolbar";
 
 function App() {
   const [document, updateDocument] = useState(defaultDocument);
   const editorRef = useRef(null)
+  console.log("App renders")
   return (
     <div className="App">
       <Navbar />

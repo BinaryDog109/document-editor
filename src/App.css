@@ -5,6 +5,9 @@
   --primary-color: #0099FA;
   --secondary-color: #EFFAFF;
   --info-color: #F1F1E6;
+  --status-disconnected-color: #7c7c7c;
+  --status-connecting-color: #007ecc;
+  --status-connected-color: #00aa00;
   --default-border-radius: 0.15em;
   --default-font-family: "DM Mono", monospace;
   --default-line-height: 1.5;
