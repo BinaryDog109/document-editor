@@ -13,29 +13,37 @@ export const useWebRTC = (socket) => {
   // const pcRef = useRef();
   const [pc, setPeerConnection] = useState(null);
   const [otherUser, setOtherUser] = useState("");
+  const [hasOtherUserLeft, setHasOtherUserLeft] = useState(false);
   const [hasExit, setHasExit] = useState(false);
   const [hasHandshakeCompleted, sethasHandshakeCompleted] = useState(false);
-  const [side, setSide] = useState('')
+  const [side, setSide] = useState("");
+
   // const history = useHistory();
 
+
+
+  // On pc change effect
   useEffect(() => {
-    // socket.emit("join room", roomId);
-    if (!pc && !hasExit) {
+    if (!pc) {
       // current user B is joining A (other user in the room is A)
       // On sending the offer
+      console.log("Initialising a null pc!")
+      setHasOtherUserLeft(false)
       socket.on("other user", (otherUserSocketId) => {
-        console.log(`Detected other user already in the room ${otherUserSocketId}`)
+        console.log(
+          `Detected other user already in the room ${otherUserSocketId}`
+        );
         const initiatorPeerConnection = callUser(otherUserSocketId, socket);
         setPeerConnection(initiatorPeerConnection);
         setOtherUser(otherUserSocketId);
-        setSide("Caller")
-        console.log(`PeerConnection created on caller side`)
+        setSide("Caller");
+        console.log(`PeerConnection created on caller side`);
       });
       // current user A detects B joining in
       socket.on("user joined", (otherUserSocketId) => {
-        console.log(`Detected other user joining in ${otherUserSocketId}`)
+        console.log(`Detected other user joining in ${otherUserSocketId}`);
         setOtherUser(otherUserSocketId);
-        setSide("Callee")
+        setSide("Callee");
       });
       // On receiving offer
       socket.on("offer", (receivedOfferPayload) => {
@@ -51,32 +59,48 @@ export const useWebRTC = (socket) => {
           receivedOfferPayload
         );
         setPeerConnection(responsePeerConnection);
-        console.log(`PeerConnection created on callEE side`)
+        console.log(`PeerConnection created on callEE side`);
       });
-    }
-    if (pc && !hasHandshakeCompleted) {
+    } else {
       socket.on("answer", async (payload) => {
         await handleReceiveAnswer(pc, payload);
-        sethasHandshakeCompleted(true)
-        socket.emit('answer received', payload.caller)
+        sethasHandshakeCompleted(true);
+        socket.emit("answer received", payload.caller);
       });
       socket.on("ice-candidate", (candidate) => {
         handleArrivingCandidate(pc, candidate);
       });
-      socket.on('connected', () => {
-        sethasHandshakeCompleted(true)
-      })
+      socket.on("connected", () => {
+        sethasHandshakeCompleted(true);
+      });
+      socket.on("user left", (leftUser) => {
+        console.log(`${leftUser} has left, resetting connection...`);
+        setOtherUser("");
+        setHasOtherUserLeft(true);
+      });
     }
-
-    return () => {      
-      if (!hasHandshakeCompleted) return
-      console.log("Unmounting and closing peer...");
+    return () => {
+      if (!pc) return;
       setHasExit(true);
       closePeerConnection(pc);
+      socket.removeAllListeners()
+    };
+  }, [pc, socket]);
+
+  // on user left effect
+  useEffect(() => {
+    if (hasOtherUserLeft) {
       setPeerConnection(null);
-      socket.disconnect();
-    }; 
-  }, [socket, pc, hasExit, hasHandshakeCompleted]);
+    }
+  }, [hasOtherUserLeft]);
+
+    // On unmount effect
+    useEffect(() => {
+      return () => {
+        setPeerConnection(null);
+        socket.disconnect();
+      };
+    }, [socket]);
 
   return { socket, pc, otherUser, hasExit, side, hasHandshakeCompleted };
 };
