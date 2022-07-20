@@ -36,7 +36,7 @@ export const ChatBox = () => {
   };
 
   useEffect(() => {
-    if (!pc || !side) return;
+    if (!pc || !side) {setDataChannel(null); return};
     if (side === "Caller") {
       console.log("creating a data channel");
       setDataChannel(pc.createDataChannel("chatChannel"));

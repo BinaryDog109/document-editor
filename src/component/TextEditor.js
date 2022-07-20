@@ -15,9 +15,11 @@ import { LinkUpdateCard } from "./LinkUpdateCard";
 import { detectLinkText, isOnLinkNode } from "../utils/EditorStyleUtils";
 import { ChatBox } from "./ChatBox";
 import { RoomPanel } from "./RoomPanel";
+import { WebRTCContextProvider } from "../context/WebRTCContext";
 
 export const TextEditor = ({ document, onChange, editorRef }) => {
   // const editor = useMemo(() => withReact(createEditor()), []);
+  const [show, setShow] = useState(true);
   const [editor] = useState(() => withReact(createEditor()));
   const { renderElement, renderLeaf, onKeyDown } = useRenderElement(editor);
   const [prevSelection, selection, setSelection] = useSelection(editor);
@@ -53,15 +55,24 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
         />
       ) : null}
       <Toolbar selection={selection} />
-        <div className={styles["editable-container"]}>
-          <RoomPanel />
-          <Editable
-            renderElement={renderElement}
-            renderLeaf={renderLeaf}
-            onKeyDown={onKeyDown}
-          />
-          <ChatBox />
-        </div>
+      <div className={styles["editable-container"]}>
+        <RoomPanel />
+        <ChatBox />
+
+        <Editable
+          renderElement={renderElement}
+          renderLeaf={renderLeaf}
+          onKeyDown={onKeyDown}
+        />
+
+        <button
+          onClick={() => {
+            setShow(!show);
+          }}
+        >
+          Toggle Room Panel
+        </button>
+      </div>
     </Slate>
   );
 };

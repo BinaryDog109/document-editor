@@ -9,18 +9,13 @@ import {
 } from "../utility/webRTCUtilities";
 
 export const useWebRTC = (socket) => {
-  //   const socketRef = useRef();
-  // const pcRef = useRef();
+
   const [pc, setPeerConnection] = useState(null);
   const [otherUser, setOtherUser] = useState("");
   const [hasOtherUserLeft, setHasOtherUserLeft] = useState(false);
-  const [hasExit, setHasExit] = useState(false);
+  const hasUnmountRef = useRef(false)
   const [hasHandshakeCompleted, sethasHandshakeCompleted] = useState(false);
   const [side, setSide] = useState("");
-
-  // const history = useHistory();
-
-
 
   // On pc change effect
   useEffect(() => {
@@ -46,24 +41,26 @@ export const useWebRTC = (socket) => {
         setSide("Callee");
       });
       // On receiving offer
-      socket.on("offer", (receivedOfferPayload) => {
+      socket.on("offer", async (receivedOfferPayload) => {
         const otherUserId = receivedOfferPayload.caller;
         const responsePeerConnection = createPeerConnection(
           otherUserId,
           socket,
           "notype"
         );
-        handleReceiveOffer(
+        await handleReceiveOffer(
           responsePeerConnection,
           socket,
           receivedOfferPayload
         );
+        if (hasUnmountRef.current) return
         setPeerConnection(responsePeerConnection);
         console.log(`PeerConnection created on callEE side`);
       });
     } else {
       socket.on("answer", async (payload) => {
         await handleReceiveAnswer(pc, payload);
+        if (hasUnmountRef.current) return
         sethasHandshakeCompleted(true);
         socket.emit("answer received", payload.caller);
       });
@@ -81,8 +78,8 @@ export const useWebRTC = (socket) => {
     }
     return () => {
       if (!pc) return;
-      setHasExit(true);
       closePeerConnection(pc);
+      // Remove all existing socket liseners. Otherwise when trying to establish the next connection, liseners with the already closed pc will be called.
       socket.removeAllListeners()
     };
   }, [pc, socket]);
@@ -97,10 +94,10 @@ export const useWebRTC = (socket) => {
     // On unmount effect
     useEffect(() => {
       return () => {
-        setPeerConnection(null);
+        hasUnmountRef.current = true
         socket.disconnect();
       };
     }, [socket]);
 
-  return { socket, pc, otherUser, hasExit, side, hasHandshakeCompleted };
+  return { socket, pc, otherUser, side, hasHandshakeCompleted };
 };

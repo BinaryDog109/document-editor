@@ -78,7 +78,7 @@ export const RoomPanel = () => {
           }}
           style={{ padding: ".5em", backgroundColor: "orange" }}
         >
-          Connect to:
+          Connect to: 
         </button>
         {
           <input
