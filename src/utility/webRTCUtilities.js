@@ -7,7 +7,7 @@ export function handleArrivingCandidate(pc, candidate) {
 }
 
 export async function handleReceiveAnswer(pc, payload) {
-  console.log("handleReceiveAnswer runs")
+  console.log(`handleReceiveAnswer runs, received answer from ${payload.caller}`)
   try {
     const remoteDesc = payload.description;
     await pc.setRemoteDescription(remoteDesc);
@@ -17,7 +17,7 @@ export async function handleReceiveAnswer(pc, payload) {
 }
 
 export const handleReceiveOffer = async (pc, socket, receivedOfferPayload) => {
-  console.log("handleReceiveOffer runs")
+  console.log(`handleReceiveOffer runs, sending answer from ${socket.id} to ${receivedOfferPayload.caller}`)
   try {
     // pcRef.current = createPeer();
     // pcRef.current.ondatachannel = (event) => {
@@ -43,6 +43,7 @@ export const handleCandidateGenerate = (event, socket, otherUserId) => {
   console.log("handleCandidateGenerate runs")
   if (event.candidate) {
     const payload = {
+      caller: socket.id,
       target: otherUserId,
       candidate: event.candidate,
     };

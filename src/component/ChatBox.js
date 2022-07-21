@@ -4,8 +4,9 @@ import styles from "./ChatBox.module.css";
 export const ChatBox = () => {
   const [text, setText] = useState("");
   const [messages, setMessages] = useState([]);
-  const [dataChannel, setDataChannel] = useState(null);
-  const { pc, hasExit, hasHandshakeCompleted, side } = useWebRTCContext();
+  const [dataChannelMap, setDataChannelMap] = useState({});
+  const { socket, peerConnectionsMap, otherUsers, side, hasHandshakeCompletedMap, leftUser } = useWebRTCContext();
+
   const handleReceiveMessages = useCallback((event) => {
     console.log("received new message")
     const newMessage = event.data;
@@ -18,10 +19,14 @@ export const ChatBox = () => {
     ]);
   }, []);
   const handleSend = (e) => {
-    if (!dataChannel) return;
+    const dataChannelMapKeys = Object.keys(dataChannelMap)
+    if (!dataChannelMapKeys.length) return;
     if ((e.type === "keyup" && e.key === "Enter") || e.type === "click") {
       try {
-        dataChannel.send(text);
+        dataChannelMapKeys.forEach(otherUserId => {
+          const dataChannel = dataChannelMap[otherUserId]
+          dataChannel.send(text);
+        })
         setMessages((prev) => [...prev, { isFromMe: true, data: text }]);
         console.log("message sent")
         setText("");
@@ -36,21 +41,43 @@ export const ChatBox = () => {
   };
 
   useEffect(() => {
-    if (!pc || !side) {setDataChannel(null); return};
+    const peerConnectionsMapKeys = Object.keys(peerConnectionsMap)
+    if (!side || !peerConnectionsMapKeys.length) {return};
+    
     if (side === "Caller") {
-      console.log("creating a data channel");
-      setDataChannel(pc.createDataChannel("chatChannel"));
-    } else if (side === "Callee") {
+      console.log("creating multiple data channels for other users");
+      peerConnectionsMapKeys.forEach(otherUserId => {
+        const dataChannel = peerConnectionsMap[otherUserId].createDataChannel("chatChannel")
+        dataChannel.onmessage = handleReceiveMessages;
+        setDataChannelMap(prev => ({
+          ...prev,
+          [otherUserId]: dataChannel
+        }))
+      })
+    } else if (peerConnectionsMap[side]) {
+      const pc = peerConnectionsMap[side]
       pc.ondatachannel = (event) => {
-        setDataChannel(event.channel);
-        console.log("received the data channel")
+        event.channel.onmessage = handleReceiveMessages;
+        setDataChannelMap(prev => ({
+          ...prev,
+          [side]: event.channel
+        }))
+        console.log(`received the data channel from ${side}`)
       }; 
     }
-  }, [pc, side]);
+  }, [peerConnectionsMap, side, handleReceiveMessages]);
 
-  useEffect(() => {
-    if (dataChannel) dataChannel.onmessage = handleReceiveMessages;
-  }, [handleReceiveMessages, dataChannel]);
+  useEffect(()=>{
+    if (leftUser) {
+      console.log(`In data channel: user ${leftUser} has left`)
+      setDataChannelMap(prev => {
+        prev[leftUser].close()
+        const copy = {...prev}
+        delete copy[leftUser]
+        return copy
+      })
+    }
+  }, [leftUser])
 
   return (
     <div className={styles["chat-container"]}>

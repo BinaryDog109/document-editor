@@ -3,10 +3,10 @@ import { v4 as uuid } from "uuid";
 import { useWebRTCContext } from "../hooks/useWebRTCContext";
 import styles from "./RoomPanel.module.css";
 
-const computeStatusStyleAndText = (pc, hasExit, hasHandshakeCompleted) => {
+const computeStatusStyleAndText = (hasHandshakeCompleted) => {
   let backgroundColor = "";
   let status = "";
-  if (pc && !hasHandshakeCompleted) {
+  if (!hasHandshakeCompleted) {
     status = "Connecting";
     backgroundColor = "var(--status-connecting-color)";
   }
@@ -14,34 +14,41 @@ const computeStatusStyleAndText = (pc, hasExit, hasHandshakeCompleted) => {
     status = "Connected";
     backgroundColor = "var(--status-connected-color)";
   }
-  if (!pc) {
-    status = "Disconnected";
-    backgroundColor = "var(--status-disconnected-color)";
-  }
   return [status, backgroundColor];
 };
 
 export const RoomPanel = () => {
   const [roomId, setRoomId] = useState("");
   const [joiningRoomId, setJoiningRoomId] = useState("");
-  const { socket, pc, hasExit, hasHandshakeCompleted } = useWebRTCContext();
-
-  const [status, backgroundColor] = computeStatusStyleAndText(
-    pc,
-    hasExit,
-    hasHandshakeCompleted
-  );
+  const { socket, peerConnectionsMap, otherUsers, hasHandshakeCompletedMap } =
+    useWebRTCContext();
 
   return (
     <>
       <div className={styles["room-status"]}>
-        <span
-          style={{
-            backgroundColor: backgroundColor,
-          }}
-        >
-          {status}
-        </span>
+        {!otherUsers ? (
+          <span
+            style={{
+              backgroundColor: "var(--status-disconnected-color)",
+            }}
+          >
+            Disconnected
+          </span>
+        ) : null}
+        {otherUsers.map((otherUserId) => {
+          const [status, backgroundColor] = computeStatusStyleAndText(
+            hasHandshakeCompletedMap[otherUserId]
+          );
+          return (
+            <span key={otherUserId}
+              style={{
+                backgroundColor: backgroundColor,
+              }}
+            >
+              {otherUserId}: {status}
+            </span>
+          );
+        })}
       </div>
       <div className={styles["create-room-panel"]}>
         <button
@@ -78,7 +85,7 @@ export const RoomPanel = () => {
           }}
           style={{ padding: ".5em", backgroundColor: "orange" }}
         >
-          Connect to: 
+          Connect to:
         </button>
         {
           <input

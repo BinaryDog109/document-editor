@@ -6,9 +6,9 @@ import {io} from "socket.io-client"
 export const WebRTCContext = createContext();
 export const WebRTCContextProvider = ({children}) => {
     const clientSocket = useRef(io("http://localhost:8000")).current
-    const { socket, pc, otherUser, hasExit, side, hasHandshakeCompleted } = useWebRTC(clientSocket)
+    const { socket, peerConnectionsMap, otherUsers, side, hasHandshakeCompletedMap, leftUser } = useWebRTC(clientSocket)
     return (
-        <WebRTCContext.Provider value={{ socket, pc, otherUser, hasExit, side, hasHandshakeCompleted }}>
+        <WebRTCContext.Provider value={{ socket, peerConnectionsMap, otherUsers, side, hasHandshakeCompletedMap, leftUser }}>
             {children}
         </WebRTCContext.Provider>
     )
