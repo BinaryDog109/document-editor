@@ -20,7 +20,7 @@ export const useWebRTC = (socket) => {
 
   const hasRunRef = useRef(false);
 
-  // On pcMap change effect
+  // On pcMap change effect, using mesh architecture
   useEffect(() => {
     // Update the ref every time pcmap state changes - Making socket event handlers able to access the latest state!
     peerConnectionsMapRef.current = peerConnectionsMap;
