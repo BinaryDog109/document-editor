@@ -44,7 +44,7 @@ export const ChatBox = () => {
     const peerConnectionsMapKeys = Object.keys(peerConnectionsMap)
     if (!side || !peerConnectionsMapKeys.length) {return};
     
-    if (side === "Caller") {
+    if (side === "Caller") { 
       console.log("creating multiple data channels for other users");
       peerConnectionsMapKeys.forEach(otherUserId => {
         const dataChannel = peerConnectionsMap[otherUserId].createDataChannel("chatChannel")

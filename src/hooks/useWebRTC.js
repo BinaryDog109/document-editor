@@ -16,7 +16,6 @@ export const useWebRTC = (socket) => {
   const hasUnmountRef = useRef(false);
   const [hasHandshakeCompletedMap, sethasHandshakeCompletedMap] = useState({});
   const [side, setSide] = useState("");
-  const [userWhoSentOffer, setUserWhoSentOffer] = useState('')
 
   const hasRunRef = useRef(false);
 
@@ -44,6 +43,10 @@ export const useWebRTC = (socket) => {
       });
       // current user A detects B joining in
       socket.on("user joined", (otherUserSocketId) => {
+        // Clear old ice-candidate handler immediately, to ensure new connection is added before a new handler for arriving candidates
+        socket.removeAllListeners('ice-candidate') 
+        // Reset callee side
+        setSide('')
         // console.log(`Detected other user joining in: ${otherUserSocketId}`);
         setOtherUsers((otherUserSocketIds) => [
           ...otherUserSocketIds,
@@ -96,7 +99,7 @@ export const useWebRTC = (socket) => {
           ...prev,
           [otherUserId]: true,
         }));
-      });
+      }); 
       socket.on("user left", (leftUser) => {
         console.log(`${leftUser} has left, resetting connection...`);
 
@@ -130,6 +133,10 @@ export const useWebRTC = (socket) => {
         payload.candidate
       );
     });
+    // Although having cleaned when a new user joins, still better clean it just to be safe.
+    return () => {
+      socket.removeAllListeners('ice-candidate')
+    }
   }, [side, socket])
 
   // on user left effect
