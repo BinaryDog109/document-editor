@@ -1,5 +1,6 @@
-export function handleArrivingCandidate(pc, candidate) {
-  console.log("handleArrivingCandidate runs")
+export function handleArrivingCandidate(pc, candidate, otherUserId) {
+  if (otherUserId) console.log("handleArrivingCandidate runs from", otherUserId)
+  else console.log("handleArrivingCandidate runs")
   const rtcCandidate = new RTCIceCandidate(candidate);
   pc.addIceCandidate(rtcCandidate).catch((e) =>
     console.log("Error in handleArrivingCandidate: ", e)

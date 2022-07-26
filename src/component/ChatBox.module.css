@@ -13,6 +13,8 @@
   z-index: 1;
   transform: translateY(95%);
   transition: transform 250ms;
+  font-family: var(--default-font-family);
+  font-size: 1rem;
 }
 .expand {
   transform: translateY(0%);
@@ -30,6 +32,12 @@
 .chat-content p {
   border-radius: var(--default-border-radius);
   padding: 0.5em;
+}
+.chat-content p::before {
+  content: attr(data-chat-id);
+  display: block;
+  color: #ddd;
+  font-size: .5em;
 }
 p.remote {
   background-color: var(--body-bg-color);

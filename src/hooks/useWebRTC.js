@@ -73,7 +73,7 @@ export const useWebRTC = (socket) => {
           [otherUserId]: responsePeerConnection,
         }));
         setSide(otherUserId);
-        console.log(`PeerConnection added on callEE side`);
+        console.log(`PeerConnection added on callEE side: ${otherUserId}`);
       });
     }
     // Events after pcMap has been established, ! make sure oncandidateArriving is called after new peer has been stored!
@@ -122,16 +122,17 @@ export const useWebRTC = (socket) => {
   }, [peerConnectionsMap, socket]);
 
   useEffect(()=>{
-    if (!side || side === 'Caller') return
+    if (!side) return
     // To ensure new connection is added before handle arriving candidates
     // On receving ice candidate
     socket.on("ice-candidate", (payload) => {
-      console.log("pcmapref on ice cand arriving ", peerConnectionsMapRef.current)
+      // console.log("pcmapref on ice cand arriving ", peerConnectionsMapRef.current)
       const otherUserId = payload.caller;
       handleArrivingCandidate(
         peerConnectionsMapRef.current[otherUserId],
-        payload.candidate
-      );
+        payload.candidate,
+        otherUserId
+      ); 
     });
     // Although having cleaned when a new user joins, still better clean it just to be safe.
     return () => {

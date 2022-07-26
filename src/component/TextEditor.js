@@ -12,7 +12,7 @@ import { useRenderElement } from "../hooks/useRenderElement";
 import { useSelection } from "../hooks/useSelection";
 import { Toolbar } from "./Toolbar";
 import { LinkUpdateCard } from "./LinkUpdateCard";
-import { detectLinkText, isOnLinkNode } from "../utils/EditorStyleUtils";
+import { detectLinkText, isOnLinkNode } from "../utility/EditorStyleUtils";
 import { ChatBox } from "./ChatBox";
 import { RoomPanel } from "./RoomPanel";
 import { WebRTCContextProvider } from "../context/WebRTCContext";

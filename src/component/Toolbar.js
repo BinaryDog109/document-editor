@@ -1,5 +1,5 @@
 import styles from "./Toolbar.module.css";
-import { isStyleActive, toggleStyle, getTopLevelBlockStyles, setTopLevelBlockStyles, isOnLinkNode, toggleLinkNode } from "../utils/EditorStyleUtils";
+import { isStyleActive, toggleStyle, getTopLevelBlockStyles, setTopLevelBlockStyles, isOnLinkNode, toggleLinkNode } from "../utility/EditorStyleUtils";
 import { useSlateStatic } from "slate-react";
 
 export const Toolbar = ({ selection }) => {

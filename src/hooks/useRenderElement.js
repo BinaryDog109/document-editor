@@ -4,7 +4,7 @@ import isHotkey from "is-hotkey";
 import { DefaultElement } from "slate-react";
 import { default as leafStyles } from "./Leaf.module.css";
 import { default as elementStyles } from "./Element.module.css";
-import { toggleStyle } from "../utils/EditorStyleUtils";
+import { toggleStyle } from "../utility/EditorStyleUtils";
 import { Image } from "../component/Image";
 
 export function useRenderElement(editor) {
