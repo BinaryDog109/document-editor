@@ -64,14 +64,6 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
           renderLeaf={renderLeaf}
           onKeyDown={onKeyDown}
         />
-
-        <button
-          onClick={() => {
-            setShow(!show);
-          }}
-        >
-          Toggle Room Panel
-        </button>
       </div>
     </Slate>
   );

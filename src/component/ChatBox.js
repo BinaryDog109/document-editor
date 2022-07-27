@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { animals } from "../data/animal-emoji";
+import { useCallback, useEffect, useState } from "react";
 import { useWebRTCContext } from "../hooks/useWebRTCContext";
 import styles from "./ChatBox.module.css";
 
