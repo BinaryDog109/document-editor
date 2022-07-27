@@ -48,7 +48,7 @@ export const handleCandidateGenerate = (event, socket, otherUserId) => {
       target: otherUserId,
       candidate: event.candidate,
     };
-    socket.emit("ice-candidate", payload);
+    socket.emit(`ice-candidate-${socket.id}`, payload);
   }
 };
 

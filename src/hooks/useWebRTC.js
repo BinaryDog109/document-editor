@@ -15,6 +15,7 @@ export const useWebRTC = (socket) => {
   const [leftUser, setLeftUser] = useState("");
   const hasUnmountRef = useRef(false);
   const [hasHandshakeCompletedMap, sethasHandshakeCompletedMap] = useState({});
+  // Side is "Caller" on the caller side, side is otherUserId on callee side
   const [side, setSide] = useState("");
 
   const hasRunRef = useRef(false);
@@ -33,18 +34,25 @@ export const useWebRTC = (socket) => {
         // console.log(
         //   `Detected other users already in the room: ${otherUserSocketIds}, \n setting peer connections...`
         // );
+        setSide("Caller")
         otherUserSocketIds.forEach((otherUserSocketId) => {
           map[otherUserSocketId] = callUser(otherUserSocketId, socket);
+          socket.on(`ice-candidate-${otherUserSocketId}`, (payload) => {
+            // console.log("pcmapref on ice cand arriving ", peerConnectionsMapRef.current)
+            const otherUserId = payload.caller;
+            handleArrivingCandidate(
+              peerConnectionsMapRef.current[otherUserId],
+              payload.candidate,
+              otherUserId
+            ); 
+          });
         });
         setPeerConnectionsMap(map);
         setOtherUsers(otherUserSocketIds);
-        setSide("Caller");
         console.log(`PeerConnectionsMap created on the caller side`);
       });
       // current user A detects B joining in
       socket.on("user joined", (otherUserSocketId) => {
-        // Clear old ice-candidate handler immediately, to ensure new connection is added before a new handler for arriving candidates
-        socket.removeAllListeners('ice-candidate') 
         // Reset callee side
         setSide('')
         // console.log(`Detected other user joining in: ${otherUserSocketId}`);
@@ -122,10 +130,10 @@ export const useWebRTC = (socket) => {
   }, [peerConnectionsMap, socket]);
 
   useEffect(()=>{
-    if (!side) return
+    if (!side || side==="Caller") return
     // To ensure new connection is added before handle arriving candidates
     // On receving ice candidate
-    socket.on("ice-candidate", (payload) => {
+    socket.on(`ice-candidate-${side}`, (payload) => {
       // console.log("pcmapref on ice cand arriving ", peerConnectionsMapRef.current)
       const otherUserId = payload.caller;
       handleArrivingCandidate(
@@ -134,10 +142,6 @@ export const useWebRTC = (socket) => {
         otherUserId
       ); 
     });
-    // Although having cleaned when a new user joins, still better clean it just to be safe.
-    return () => {
-      socket.removeAllListeners('ice-candidate')
-    }
   }, [side, socket])
 
   // on user left effect
