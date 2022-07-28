@@ -70,11 +70,16 @@ export const setTopLevelBlockStyles = (editor, type) => {
 export const isOnLinkNode = (editor, selection) => {
   if (!selection) return;
 
-  const [parent] = Editor.parent(editor, selection);
-  const [node] = Editor.node(editor, selection);
-  // console.log(parent, node)
+  if (selection == null) {
+    return false;
+  }
 
-  return node.type === "link" || parent.type === "link";
+  return (
+    Editor.above(editor, {
+      at: selection,
+      match: (n) => n.type === "link",
+    }) != null
+  );
 };
 
 export const toggleLinkNode = (editor) => {
@@ -89,7 +94,7 @@ export const toggleLinkNode = (editor) => {
       Transforms.wrapNodes(
         editor,
         { type: "link", url: "#" },
-        { split: true, at: editor.selection }
+        { split: true }
       );
     }
   } else {
