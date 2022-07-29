@@ -1,67 +1,116 @@
 import styles from "./Toolbar.module.css";
-import { isStyleActive, toggleStyle, getTopLevelBlockStyles, setTopLevelBlockStyles, isOnLinkNode, toggleLinkNode } from "../utility/EditorStyleUtils";
+import {
+  isStyleActive,
+  toggleStyle,
+  getTopLevelBlockStyles,
+  setTopLevelBlockStyles,
+  isOnLinkNode,
+  toggleLinkNode,
+} from "../utility/EditorStyleUtils";
 import { useSlateStatic } from "slate-react";
+import { Editor, Transforms } from "slate";
 
 export const Toolbar = ({ selection }) => {
   const editor = useSlateStatic();
-  const blockType = getTopLevelBlockStyles(editor)
+  const blockType = getTopLevelBlockStyles(editor);
 
   const handleMouseDown = (e, booleanStyle) => {
     e.preventDefault();
     toggleStyle(editor, booleanStyle);
   };
-  const onTopBlockStylesChange = e => {
-    const selectedStyle = e.target.value
-    if (selectedStyle === "multiple") return 
-    setTopLevelBlockStyles(editor, selectedStyle)
-  }
+  const onTopBlockStylesChange = (e) => {
+    const selectedStyle = e.target.value;
+    if (selectedStyle === "multiple") return;
+    setTopLevelBlockStyles(editor, selectedStyle);
+  };
   return (
     <div className={styles.toolbar}>
       <button
-      title="Bold"
+        title="Bold"
         id="bold"
         onMouseDown={
           // we use onMouseDown instead of onClick because
           // clilicking will make Slate turns the selection to null when the editor loses focus in any way.
           (e) => handleMouseDown(e, "bold")
         }
-        className={`${styles["operation-button"]} format ${isStyleActive(editor, "bold")? styles.active:''}`}
+        className={`${styles["operation-button"]} format ${
+          isStyleActive(editor, "bold") ? styles.active : ""
+        }`}
       >
         <i className="fa-solid fa-bold"></i>
       </button>
       <button
-      title="Italic"
+        title="Italic"
         id="italic"
         onMouseDown={(e) => handleMouseDown(e, "italic")}
-        className={`${styles["operation-button"]} format ${isStyleActive(editor, "italic")? styles.active:''}`}
+        className={`${styles["operation-button"]} format ${
+          isStyleActive(editor, "italic") ? styles.active : ""
+        }`}
       >
         <i className="fa-solid fa-italic"></i>
       </button>
       <button
-      title="Underline"
+        title="Underline"
         id="underline"
         onMouseDown={(e) => handleMouseDown(e, "underline")}
-        className={`${styles["operation-button"]} format ${isStyleActive(editor, "underline")? styles.active:''}`}
+        className={`${styles["operation-button"]} format ${
+          isStyleActive(editor, "underline") ? styles.active : ""
+        }`}
       >
         <i className="fa-solid fa-underline"></i>
       </button>
       <button
-      title="Code"
+        title="Code"
         id="code"
         onMouseDown={(e) => handleMouseDown(e, "code")}
-        className={`${styles["operation-button"]} format ${isStyleActive(editor, "code")? styles.active:''}`}
+        className={`${styles["operation-button"]} format ${
+          isStyleActive(editor, "code") ? styles.active : ""
+        }`}
       >
         <i className="fa-solid fa-code"></i>
       </button>
-      <button title="Strikethrough" onMouseDown={(e) => handleMouseDown(e, "strikethrough")} id="strikethrough" className={`${styles["operation-button"]} format ${isStyleActive(editor, "strikethrough")? styles.active:''}`}>
+      <button
+        title="Strikethrough"
+        onMouseDown={(e) => handleMouseDown(e, "strikethrough")}
+        id="strikethrough"
+        className={`${styles["operation-button"]} format ${
+          isStyleActive(editor, "strikethrough") ? styles.active : ""
+        }`}
+      >
         <i className="fa-solid fa-strikethrough"></i>
       </button>
 
-      <button title="Superscript" onMouseDown={(e) => handleMouseDown(e, "superscript")} id="superscript" className={`${styles["operation-button"]} script ${isStyleActive(editor, "superscript")? styles.active:''}`}>
+      <button
+        title="Superscript"
+        onMouseDown={(e) => handleMouseDown(e, "superscript")}
+        id="superscript"
+        className={`${styles["operation-button"]} script ${
+          isStyleActive(editor, "superscript") ? styles.active : ""
+        }`}
+      >
         <i className="fa-solid fa-superscript"></i>
       </button>
-      <button title="Subscript" onMouseDown={(e) => handleMouseDown(e, "subscript")} id="subscript" className={`${styles["operation-button"]} script ${isStyleActive(editor, "subscript")? styles.active:''}`}>
+      <button
+        title="Subscript"
+        onMouseDown={(e) => handleMouseDown(e, "subscript")}
+        id="subscript"
+        className={`${styles["operation-button"]} script ${
+          isStyleActive(editor, "subscript") ? styles.active : ""
+        }`}
+      >
         <i className="fa-solid fa-subscript"></i>
+      </button>
+      <button
+        onMouseDown={() => {
+          Transforms.delete(editor, {
+            at: {
+              anchor: { path: [0, 0], offset: 0 },
+              focus: { path: [1, 0], offset: 2 },
+            },
+          })
+        }}
+      >
+        click
       </button>
       {/* <!-- List operations --> */}
       {/* <button id="insertOrderedList" className="${styles["operation-button"]}">
@@ -78,9 +127,16 @@ export const Toolbar = ({ selection }) => {
         <i className="fa-solid fa-rotate-right"></i>
       </button> */}
       {/* <!-- Link operations --> */}
-      <button title="Toggle Link" onMouseDown={() => {
-        toggleLinkNode(editor)
-      }} id="createLink" className={`${styles["operation-button"]} ${isOnLinkNode(editor, editor.selection)? styles.active:''}`}>
+      <button
+        title="Toggle Link"
+        onMouseDown={() => {
+          toggleLinkNode(editor);
+        }}
+        id="createLink"
+        className={`${styles["operation-button"]} ${
+          isOnLinkNode(editor, editor.selection) ? styles.active : ""
+        }`}
+      >
         <i className="fa-solid fa-link"></i>
       </button>
 
@@ -106,14 +162,22 @@ export const Toolbar = ({ selection }) => {
       </button> */}
 
       {/* <!-- Headings --> */}
-      <select onChange={onTopBlockStylesChange} value={blockType || "multiple"} className="operation-selection" name="" id="formatBlock">
+      <select
+        onChange={onTopBlockStylesChange}
+        value={blockType || "multiple"}
+        className="operation-selection"
+        name=""
+        id="formatBlock"
+      >
         <option value="paragraph">Paragraph</option>
         <option value="h1">Heading 1</option>
         <option value="h2">Heading 2</option>
         <option value="h3">Heading 3</option>
         <option value="h4">Heading 4</option>
         <option value="h5">Heading 5</option>
-        <option disabled value="multiple">Unknown</option>
+        <option disabled value="multiple">
+          Unknown
+        </option>
       </select>
       {/* <!-- Fonts --> */}
       <select className="operation-selection" name="" id="fontName"></select>

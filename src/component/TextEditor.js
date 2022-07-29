@@ -26,7 +26,7 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
 
   const onChangeHandler = useCallback(
     (e) => {
-      console.log("document change!", e, editor.selection);
+      console.log("document change!", e, editor.selection, editor.operations);
       detectLinkText(editor);
       const document = e;
       onChange(document);

@@ -114,7 +114,7 @@ function onKeyDown(editor) {
     } else if (isHotkey("mod+i", event)) {
       toggleStyle(editor, "italic");
     } else if (isHotkey("mod+c", event)) {
-      toggleStyle(editor, "code");
+      // toggleStyle(editor, "code");
     } else if (isHotkey("mod+u", event)) {
       toggleStyle(editor, "underline");
     }
