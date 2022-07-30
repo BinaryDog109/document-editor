@@ -16,6 +16,7 @@ import { detectLinkText, isOnLinkNode } from "../utility/EditorStyleUtils";
 import { ChatBox } from "./ChatBox";
 import { RoomPanel } from "./RoomPanel";
 import { WebRTCContextProvider } from "../context/WebRTCContext";
+import { findActualOffsetFromParagraphAt } from "../crdt/JSONCRDT";
 
 export const TextEditor = ({ document, onChange, editorRef }) => {
   // const editor = useMemo(() => withReact(createEditor()), []);

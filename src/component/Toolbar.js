@@ -8,10 +8,66 @@ import {
   toggleLinkNode,
 } from "../utility/EditorStyleUtils";
 import { useSlateStatic } from "slate-react";
-import { Editor, Transforms } from "slate";
+import { createEditor, Editor, Transforms } from "slate";
+import vc from "vectorclock"
 
 export const Toolbar = ({ selection }) => {
   const editor = useSlateStatic();
+  console.log({ editor });
+  class Foo {
+    toString(){
+      return 'Pity the Foo';
+    }
+  }
+  
+  const foo = new Foo();
+  const myEditorChildren = [
+    {
+      type: "paragraph",
+      children: [
+        {
+          text: 'abc',
+        },
+      ],
+    },
+  ];
+
+  const myEditor = createEditor()
+  myEditor.children = myEditorChildren;
+  myEditor.onChange = () => {console.log({myEditor})}
+  
+  
+  // Transforms.insertText(myEditor, "123", {
+  //   at: {
+  //     path: [0, 0],
+  //     offset: 2
+  //   }
+  // })
+  myEditor.apply({
+    type: 'insert_text',
+    path: [0, 0],
+    offset: 15,
+    text: foo,
+  })
+  console.log({ myEditor });
+
+  // const clockA = {clock:{}}
+  // const clockB = {clock: {}}
+  // vc.increment(clockA, 'a')
+  // vc.increment(clockB, 'b')
+  // console.log({clockA, clockB})
+  // console.log("compare vcs:", vc.compare({clock: {
+  //   a: 3,
+  //   b: 3
+  // }}, {
+  //   clock: {
+  //     a: 2,
+  //     b: 1,
+  //     c: 0
+  //   }
+  // }))
+  // ==================
+
   const blockType = getTopLevelBlockStyles(editor);
 
   const handleMouseDown = (e, booleanStyle) => {
@@ -107,7 +163,7 @@ export const Toolbar = ({ selection }) => {
               anchor: { path: [0, 0], offset: 0 },
               focus: { path: [1, 0], offset: 2 },
             },
-          })
+          });
         }}
       >
         click
