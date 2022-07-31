@@ -17,4 +17,7 @@ export class CRDTOperation {
         }
         this.insertAfterNodeId = insertAfterNodeId
     }
+    setDeletedNodeId(deletedNodeId) {
+        this.deletedNodeId = deletedNodeId
+    }
 }

@@ -1,6 +1,7 @@
 import {
   createEditor,
   Editor,
+  Element,
   Node,
   Operation,
   Path,
@@ -56,26 +57,39 @@ export const CRDTify = (editor, peerId, dataChannel) => {
   // called on every node update
   editor.normalizeNode = (entry) => {
     const [node, path] = entry;
-    if (node.type === "paragraph" && !node.rga) {
-      // Setting rga for every paragraph
-      Transforms.setNodes(
-        editor,
-        { rga: new RGA() },
-        {
-          match: (n) => n.type === "paragraph",
-          at: path,
-        }
-      );
-      return;
-    }
+
     normalizeNode(entry);
+  };
+  const { insertBreak } = editor;
+  // Overwrite insertBreak behaviour
+  editor.insertBreak = () => {
+    const { selection } = editor
+    console.log({selection})
+    if (selection) {
+      const [nodes] = Editor.nodes(editor, {
+        match: n =>
+          !Editor.isEditor(n) &&
+          Element.isElement(n) &&
+          (n.type === 'paragraph')
+      })
+
+      if(nodes){
+        Transforms.insertNodes(editor, {
+          children: [{text: ""}],
+          type: 'paragraph',
+          rga: new RGA()
+        })
+        return
+      }
+    }
+    insertBreak()
   };
   const { onChange } = editor;
   editor.onChange = () => {
     const operations = editor.operations;
     const crdtOps = mapOperationsFromSlate(editor, operations);
     const readyCRDTOps = executeUpstreamCRDTOps(editor, crdtOps);
-    console.log({readyCRDTOps})
+    console.log({ readyCRDTOps });
     onChange();
   };
 };
@@ -83,33 +97,82 @@ export const CRDTify = (editor, peerId, dataChannel) => {
 class RGA {
   constructor() {
     this.list = new LinkedList();
+    this.list.tombStoneCount = 0;
     this.nodeMap = new Map();
   }
+  getFirstVisibleNode() {
+    let head = this.list.getHeadNode();
+    console.log("Got first visible node");
+    while (head !== null && head.data.isTombStoned) {
+      head = head.next;
+    }
+
+    return head;
+  }
+  findRGANodeAt(index) {
+    // cannot find out-of-bounds node
+    if (index < 0 || index > this.list.getSize()) {
+      return false;
+    }
+    // if index is 0, we just need to find the first visible node
+    if (index === 0) {
+      return this.getFirstVisibleNode();
+    }
+
+    let current = this.getFirstVisibleNode();
+    let position = 0;
+
+    while (position < index) {
+      current = current.next;
+      // Skip if it has been deleted
+      if (current.data.isTombStoned) {
+        continue;
+      } else {
+        position += 1;
+        if (position >= index) break;
+      }
+    }
+    return current;
+  }
+
   insertAtAndReturnNode(index, data) {
     var current = this.list.getHeadNode(),
       newNode = this.list.createNewNode(data),
       position = 0;
 
+    // check for index out-of-bounds
+    if (index < 0 || index > this.list.getSize()) {
+      return false;
+    }
     // if index is 0, we just need to insert the first node
     if (index === 0) {
       this.list.insertFirst(data);
       return this.list.getHeadNode();
     }
-    // If index is the length, insert to the end
-    if (index === this.list.getSize()) {
-      this.list.insert(data)
-      return this.list.getTailNode()
+    // If index is the length of all visible nodes, insert to the end
+    if (index === this.list.getSize() - this.list.tombStoneCount) {
+      this.list.insert(data);
+      return this.list.getTailNode();
     }
-    // check for index out-of-bounds
-    if (index < 0 || index > this.list.getSize()) {
-      return false;
-    }  
 
+    let encounteredFirstNonTombStone = false;
     while (position < index) {
+      if (!current.data.isTombStoned && !encounteredFirstNonTombStone) {
+        encounteredFirstNonTombStone = true;
+        position = 0;
+        current = current.next;
+        continue;
+      }
+
       // Skip if it has been deleted
-      if (current.data.isTombStoned) continue
-      current = current.next;
-      position += 1;
+      else if (current.data.isTombStoned) {
+        current = current.next;
+        continue;
+      } else if (!current.data.isTombStoned) {
+        position += 1;
+        if (position >= index) break;
+        current = current.next;
+      }
     }
 
     current.prev.next = newNode;
@@ -136,8 +199,9 @@ function executeUpstreamCRDTOps(editor, crdtOps) {
 
     // increase local vector clock and assign it for every op
     vc.increment(editor.vectorClock, editor.peerId);
-    node.vectorClock.clock = { ...editor.vectorClock.clock };
+
     if (type === "insert_text") {
+      node.vectorClock.clock = { ...editor.vectorClock.clock };
       const paragraphPath = op.paragraphPath;
       const [paragraphNode, path] = Editor.node(editor, paragraphPath);
       /**@type {RGA} */
@@ -151,26 +215,30 @@ function executeUpstreamCRDTOps(editor, crdtOps) {
         Editor.isEnd(editor, Range.end(editor.selection), path) &&
         Node.string(paragraphNode).length === index + 1
       ) {
-        
         rga.list.insert(node);
         insertAfterNode = rga.list.getTailNode().prev;
-        
       } else {
-        
         // traverse through visible nodes
-        const insertedNode = rga.insertAtAndReturnNode(index, node)
-        
-        insertAfterNode = insertedNode.prev
+        const insertedNode = rga.insertAtAndReturnNode(index, node);
+        insertAfterNode = insertedNode.prev;
       }
       const insertAfterNodeId = insertAfterNode
         ? insertAfterNode.data.getId()
         : "";
-        
+
       op.setinsertAfterNodeId(insertAfterNodeId);
       rga.nodeMap.set(node.getId(), node);
     }
+    if (type === "remove_text") {
+      const [paragraphNode, path] = Editor.node(editor, op.paragraphPath);
+      /**@type {RGA} */
+      const rga = paragraphNode.rga;
+      const map = rga.nodeMap;
+      map.get(op.deletedNodeId).isTombStoned = true;
+      rga.list.tombStoneCount++;
+    }
   });
-  return crdtOps
+  return crdtOps;
 }
 
 /**
@@ -195,7 +263,7 @@ function mapOperationsFromSlate(editor, slateOps) {
         type: "insert_node"
       }
      */
-    if (slateOp.type === "insert_text") {
+    if (slateOp.type === "insert_text" || slateOp.type === "remove_text") {
       const [paragraph, paragraphPath] = findParagraphNodeEntryAt(
         editor,
         slateOp.path
@@ -205,16 +273,39 @@ function mapOperationsFromSlate(editor, slateOps) {
         offset: slateOp.offset,
       });
       const chars = slateOp.text.split("");
-      chars.forEach((char) => {
-        const characterNode = new CharacterNode(char, editor.peerId);
-        const crdtOp = new CRDTOperation(
-          slateOp.type,
-          characterNode,
-          actualOffset++,
-          paragraphPath,
-        );
-        crdtOps.push(crdtOp);
-      });
+      if (slateOp.type === "insert_text") {
+        chars.forEach((char) => {
+          const characterNode = new CharacterNode(char, editor.peerId);
+          const crdtOp = new CRDTOperation(
+            slateOp.type,
+            characterNode,
+            actualOffset++,
+            paragraphPath
+          );
+          crdtOps.push(crdtOp);
+        });
+      } else if (slateOp.type === "remove_text") {
+        /**
+     * offset: 2
+       path: (2) [0, 0]
+       text: "cd"
+       type: "remove_text"
+     */
+        chars.forEach((char) => {
+          // find the corresponidng char node in the list
+          /**@type {RGA} */
+          const rga = paragraph.rga;
+          const nodeToBeDeleted = rga.findRGANodeAt(actualOffset);
+          const crdtOp = new CRDTOperation(
+            slateOp.type,
+            undefined,
+            actualOffset++,
+            paragraphPath
+          );
+          crdtOp.setDeletedNodeId(nodeToBeDeleted.data.getId());
+          crdtOps.push(crdtOp);
+        });
+      }
     }
   });
 
@@ -231,12 +322,15 @@ export const findParagraphNodeEntryAt = (editor, path) => {
 
 export const findActualOffsetFromParagraphAt = (editor, point) => {
   const [paragraph, path] = findParagraphNodeEntryAt(editor, point.path);
+
   const generator = Node.texts(paragraph);
 
   let offset = point.offset;
   for (const [node, path] of generator) {
+    // The path is relative, so we just compare the last number of a path
     // If the text node is before our text node
-    if (Path.compare(path, point.path) === -1) {
+    if (Path.compare(path, [point.path[point.path.length - 1]]) === -1) {
+      console.log("1 ndoe before!");
       offset += Node.string(node).length;
     }
   }

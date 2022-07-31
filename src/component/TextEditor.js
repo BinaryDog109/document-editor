@@ -38,7 +38,7 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
     (e) => {
       console.log("document change!", e, editor.selection, editor.operations);
       
-      detectLinkText(editor);
+      // detectLinkText(editor);
       const document = e;
       onChange(document);
       setSelection(editor.selection);
