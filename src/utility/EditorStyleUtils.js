@@ -117,6 +117,7 @@ export const detectLinkText = (editor) => {
   const pointOfLastCharacter = Editor.before(editor, editor.selection, {
     unit: "character",
   });
+  if (!pointOfLastCharacter) return
   const lastChar = Editor.string(
     editor,
     Editor.range(editor, pointOfLastCharacter, cursorPoint)

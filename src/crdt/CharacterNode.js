@@ -1,12 +1,23 @@
 export class CharacterNode {
-    constructor(char, peerId, vectorClock, isTombStoned, next) {
+    constructor(char, peerId, vectorClock) {
         this.char = '' || char
         this.peerId = peerId
-        this.vectorClock = [] || vectorClock
-        this.isTombStoned = false || isTombStoned
-        this.next = null || next
+        this.vectorClock = {clock: {}} || vectorClock
+        this.isTombStoned = false
     }
     toString() {
         return this.char
+    }
+    getId() {
+        // An id is sum of the vector clock + peerId
+        const {clock} = this.vectorClock
+        let sum = 0
+        Object.keys(clock).forEach(peerId => {
+            sum += clock[peerId]
+        })
+        return `${sum}-${this.peerId}`
+    }
+    setTombStoned() {
+        this.isTombStoned = true
     }
 }

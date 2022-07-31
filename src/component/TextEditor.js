@@ -1,7 +1,7 @@
 // Import the Slate editor factory.
 import styles from "./TextEditor.module.css";
-import { useCallback, useMemo, useState } from "react";
-import { createEditor } from "slate";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { createEditor, Node } from "slate";
 // Import the `Editor` and `Transforms` helpers from Slate.
 import { Editor, Transforms, Text } from "slate";
 
@@ -16,7 +16,8 @@ import { detectLinkText, isOnLinkNode } from "../utility/EditorStyleUtils";
 import { ChatBox } from "./ChatBox";
 import { RoomPanel } from "./RoomPanel";
 import { WebRTCContextProvider } from "../context/WebRTCContext";
-import { findActualOffsetFromParagraphAt } from "../crdt/JSONCRDT";
+import { CRDTify, findActualOffsetFromParagraphAt, findParagraphNodeEntryAt } from "../crdt/JSONCRDT";
+import { useWebRTCContext } from "../hooks/useWebRTCContext";
 
 export const TextEditor = ({ document, onChange, editorRef }) => {
   // const editor = useMemo(() => withReact(createEditor()), []);
@@ -24,10 +25,19 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
   const [editor] = useState(() => withReact(createEditor()));
   const { renderElement, renderLeaf, onKeyDown } = useRenderElement(editor);
   const [prevSelection, selection, setSelection] = useSelection(editor);
+  const { socket } = useWebRTCContext();
+
+
+  useEffect(()=>{
+    socket.on('connect', () => {
+      CRDTify(editor, socket.id)
+    });
+  }, [socket, editor])
 
   const onChangeHandler = useCallback(
     (e) => {
       console.log("document change!", e, editor.selection, editor.operations);
+      
       detectLinkText(editor);
       const document = e;
       onChange(document);

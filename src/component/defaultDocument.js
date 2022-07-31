@@ -44,6 +44,10 @@ export const defaultDocument = [
   // },
   {
     type: "paragraph",
-    children: [{text: 'abc'}, {text: 'def', bold:true}]
+    children: [{text: ''}]
+  },
+  {
+    type: "paragraph",
+    children: [{text: 'qqq'}, {text: 'zzz', bold:true}]
   }
 ];

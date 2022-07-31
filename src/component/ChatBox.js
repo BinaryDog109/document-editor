@@ -68,10 +68,11 @@ export const ChatBox = () => {
       peerConnectionsMapKeys.forEach((otherUserId) => {
         const dataChannel =
           peerConnectionsMap[otherUserId].createDataChannel("chatChannel");
+          console.log("data channel order: ", dataChannel.ordered)
         dataChannel.onmessage = handleReceiveMessages;
         setDataChannelMap((prev) => ({
           ...prev,
-          [otherUserId]: dataChannel,
+          [otherUserId]: dataChannel, 
         }));
       });
     } else if (peerConnectionsMap[side]) {
