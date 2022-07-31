@@ -104,18 +104,7 @@ export const Toolbar = ({ selection }) => {
       >
         <i className="fa-solid fa-subscript"></i>
       </button>
-      <button
-        onMouseDown={() => {
-          Transforms.delete(editor, {
-            at: {
-              anchor: { path: [0, 0], offset: 0 },
-              focus: { path: [1, 0], offset: 2 },
-            },
-          });
-        }}
-      >
-        click
-      </button>
+      
       {/* <!-- List operations --> */}
       {/* <button id="insertOrderedList" className="${styles["operation-button"]}">
         <i className="fa-solid fa-list-ol"></i>
@@ -184,10 +173,10 @@ export const Toolbar = ({ selection }) => {
         </option>
       </select>
       {/* <!-- Fonts --> */}
-      <select className="operation-selection" name="" id="fontName"></select>
-      <select className="operation-selection" name="" id="fontSize"></select>
+      {/* <select className="operation-selection" name="" id="fontName"></select>
+      <select className="operation-selection" name="" id="fontSize"></select> */}
       {/* <!-- Colors --> */}
-      <div className={styles["input-wrapper"]}>
+      {/* <div className={styles["input-wrapper"]}>
         <input
           type="color"
           name=""
@@ -204,7 +193,7 @@ export const Toolbar = ({ selection }) => {
           className="operation-input"
         />
         <label htmlFor="highlight-color">Highlight Color</label>
-      </div>
+      </div> */}
     </div>
   );
 };

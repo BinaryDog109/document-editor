@@ -101,12 +101,13 @@ export const useWebRTC = (socket) => {
         // console.log(`Sent answer received event to ${otherUserId}`)
       });
       
-      socket.on("connected", (otherUserId) => {
-        // console.log(`Received connected event from ${otherUserId}`)
+      socket.on("answer received", (otherUserId) => {
+        console.log("answer received event received")
         sethasHandshakeCompletedMap((prev) => ({
           ...prev,
           [otherUserId]: true,
         }));
+        
       }); 
       socket.on("user left", (leftUser) => {
         console.log(`${leftUser} has left, resetting connection...`);

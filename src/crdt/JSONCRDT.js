@@ -26,7 +26,7 @@ export const CRDTify = (editor, peerId, dataChannel) => {
   /** Overwrite JSON.stringify so that it wont stringify our circular references in the doubly linked list */
   JSON.stringify = function (item, replacer, space) {
     // Keep other JSON call passed
-    if (typeof item[0] !== "object") {
+    if (typeof item[0] !== "object" || item[0].type !== "paragraph") {
       return original(item, replacer, space);
     }
     // item is an array here
@@ -64,7 +64,6 @@ export const CRDTify = (editor, peerId, dataChannel) => {
   // Overwrite insertBreak behaviour
   editor.insertBreak = () => {
     const { selection } = editor
-    console.log({selection})
     if (selection) {
       const [nodes] = Editor.nodes(editor, {
         match: n =>
@@ -90,6 +89,12 @@ export const CRDTify = (editor, peerId, dataChannel) => {
     const crdtOps = mapOperationsFromSlate(editor, operations);
     const readyCRDTOps = executeUpstreamCRDTOps(editor, crdtOps);
     console.log({ readyCRDTOps });
+    readyCRDTOps.forEach(crdtOp => {
+      // Send to buffer
+      const json = JSON.stringify(crdtOp)
+      bufferCRDTOperationJSON(editor, json)
+    })
+    console.log({buffer: editor.crdtOpJsonBuffer})
     onChange();
   };
 };
@@ -102,11 +107,9 @@ class RGA {
   }
   getFirstVisibleNode() {
     let head = this.list.getHeadNode();
-    console.log("Got first visible node");
     while (head !== null && head.data.isTombStoned) {
       head = head.next;
     }
-
     return head;
   }
   findRGANodeAt(index) {
@@ -184,6 +187,16 @@ class RGA {
 
     return newNode;
   }
+}
+
+export function bufferCRDTOperationJSON(editor, opJson) {
+  if (!editor.crdtOpJsonBuffer) editor.crdtOpJsonBuffer = []
+  editor.crdtOpJsonBuffer.push(opJson)
+}
+
+export function handleMessageFromUpstream(event) {
+  const crdtOp = JSON.parse(event.data);
+  console.log({crdtOp})
 }
 
 /**

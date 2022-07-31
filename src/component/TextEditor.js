@@ -16,28 +16,105 @@ import { detectLinkText, isOnLinkNode } from "../utility/EditorStyleUtils";
 import { ChatBox } from "./ChatBox";
 import { RoomPanel } from "./RoomPanel";
 import { WebRTCContextProvider } from "../context/WebRTCContext";
-import { CRDTify, findActualOffsetFromParagraphAt, findParagraphNodeEntryAt } from "../crdt/JSONCRDT";
+import {
+  CRDTify,
+  findActualOffsetFromParagraphAt,
+  findParagraphNodeEntryAt,
+  handleMessageFromUpstream,
+} from "../crdt/JSONCRDT";
 import { useWebRTCContext } from "../hooks/useWebRTCContext";
 
 export const TextEditor = ({ document, onChange, editorRef }) => {
   // const editor = useMemo(() => withReact(createEditor()), []);
-  const [show, setShow] = useState(true);
   const [editor] = useState(() => withReact(createEditor()));
   const { renderElement, renderLeaf, onKeyDown } = useRenderElement(editor);
   const [prevSelection, selection, setSelection] = useSelection(editor);
-  const { socket } = useWebRTCContext();
+  const [dataChannelMap, setDataChannelMap] = useState({});
+  const [CRDTSyncStatus, setCRDTSyncStatus] = useState("Not connected");
+  const {
+    socket,
+    chatId,
+    peerConnectionsMap,
+    otherUsers,
+    side,
+    hasHandshakeCompletedMap,
+    leftUser,
+  } = useWebRTCContext();
 
+  const handleSendCRDTOperationJson = (e) => {
+    const dataChannelMapKeys = Object.keys(dataChannelMap);
+    if (!dataChannelMapKeys.length) return;
+    try {
+      setCRDTSyncStatus("Sending...");
+      dataChannelMapKeys.forEach((otherUserId) => {
+        const dataChannel = dataChannelMap[otherUserId];
+        const buffer = editor.crdtOpJsonBuffer;
+        while (buffer.length > 0) {
+          const opJson = buffer.shift();
+          dataChannel.send(opJson);
+        }
+      });
+      console.log("crdt op sent");
+      setCRDTSyncStatus("Sent");
+    } catch (error) {
+      console.log("Error in handleSend: ", error);
+    }
+  };
 
-  useEffect(()=>{
-    socket.on('connect', () => {
-      CRDTify(editor, socket.id)
+  useEffect(() => {
+    socket.on("connect", () => {
+      CRDTify(editor, socket.id);
     });
-  }, [socket, editor])
+  }, [socket, editor]);
+  useEffect(() => {
+    const peerConnectionsMapKeys = Object.keys(peerConnectionsMap);
+    if (!side || !peerConnectionsMapKeys.length) {
+      return;
+    }
+
+    if (side === "Caller") {
+      console.log("creating multiple crdt channels for other users");
+      peerConnectionsMapKeys.forEach((otherUserId) => {
+        const dataChannel =
+          peerConnectionsMap[otherUserId].createDataChannel("crdtChannel");
+        dataChannel.onmessage = handleMessageFromUpstream;
+        setDataChannelMap((prev) => ({
+          ...prev,
+          [otherUserId]: dataChannel,
+        }));
+      });
+    } else if (peerConnectionsMap[side]) {
+      const pc = peerConnectionsMap[side];
+      pc.addEventListener("datachannel", (event) => {
+        const remoteChannel = event.channel;
+        if (remoteChannel.label === "crdtChannel") {
+          event.channel.onmessage = handleMessageFromUpstream;
+          setDataChannelMap((prev) => ({
+            ...prev,
+            [side]: event.channel,
+          }));
+          setCRDTSyncStatus("Channel Established");
+          console.log(`received the crdt data channel from ${side}`);
+        }
+      });
+    }
+  }, [peerConnectionsMap, side]);
+  useEffect(() => {
+    if (leftUser) {
+      console.log(`In crdt data channel: user ${leftUser} has left`);
+      setDataChannelMap((prev) => {
+        prev[leftUser].close();
+        const copy = { ...prev };
+        delete copy[leftUser];
+        return copy;
+      });
+    }
+  }, [leftUser]);
 
   const onChangeHandler = useCallback(
     (e) => {
       console.log("document change!", e, editor.selection, editor.operations);
-      
+
       // detectLinkText(editor);
       const document = e;
       onChange(document);
@@ -69,6 +146,10 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
       <div className={styles["editable-container"]}>
         <RoomPanel />
         <ChatBox />
+        <div className="sync-panel">
+          <button onClick={handleSendCRDTOperationJson}>Sync</button>{" "}
+          <span>{CRDTSyncStatus}</span>
+        </div>
 
         <Editable
           renderElement={renderElement}

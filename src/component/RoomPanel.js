@@ -22,7 +22,7 @@ export const RoomPanel = () => {
   const [joiningRoomId, setJoiningRoomId] = useState("");
   const { socket, peerConnectionsMap, otherUsers, hasHandshakeCompletedMap } =
     useWebRTCContext();
-
+ 
   return (
     <>
       <div className={styles["room-status"]}>

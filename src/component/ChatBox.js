@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useWebRTCContext } from "../hooks/useWebRTCContext";
 import styles from "./ChatBox.module.css";
 
-
 export const ChatBox = () => {
   const [text, setText] = useState("");
   const [messages, setMessages] = useState([]);
@@ -17,8 +16,6 @@ export const ChatBox = () => {
     leftUser,
   } = useWebRTCContext();
 
-
-
   const handleReceiveMessages = useCallback((event) => {
     console.log("received new message");
     const newMessage = JSON.parse(event.data);
@@ -27,7 +24,7 @@ export const ChatBox = () => {
       {
         isFromMe: false,
         data: newMessage.text,
-        from: newMessage.chatId
+        from: newMessage.chatId,
       },
     ]);
   }, []);
@@ -40,11 +37,14 @@ export const ChatBox = () => {
           const dataChannel = dataChannelMap[otherUserId];
           const json = JSON.stringify({
             text,
-            chatId 
-          })
+            chatId,
+          });
           dataChannel.send(json);
         });
-        setMessages((prev) => [...prev, { isFromMe: true, data: text, from: chatId }]);
+        setMessages((prev) => [
+          ...prev,
+          { isFromMe: true, data: text, from: chatId },
+        ]);
         console.log("message sent");
         setText("");
       } catch (error) {
@@ -68,23 +68,26 @@ export const ChatBox = () => {
       peerConnectionsMapKeys.forEach((otherUserId) => {
         const dataChannel =
           peerConnectionsMap[otherUserId].createDataChannel("chatChannel");
-          console.log("data channel order: ", dataChannel.ordered)
+        console.log("data channel order: ", dataChannel.ordered);
         dataChannel.onmessage = handleReceiveMessages;
         setDataChannelMap((prev) => ({
           ...prev,
-          [otherUserId]: dataChannel, 
+          [otherUserId]: dataChannel,
         }));
       });
     } else if (peerConnectionsMap[side]) {
       const pc = peerConnectionsMap[side];
-      pc.ondatachannel = (event) => {
-        event.channel.onmessage = handleReceiveMessages;
-        setDataChannelMap((prev) => ({
-          ...prev,
-          [side]: event.channel,
-        }));
-        console.log(`received the data channel from ${side}`);
-      };
+      pc.addEventListener("datachannel", (event) => {
+        const remoteChannel = event.channel;
+        if (remoteChannel.label === "chatChannel") {
+          remoteChannel.onmessage = handleReceiveMessages;
+          setDataChannelMap((prev) => ({
+            ...prev,
+            [side]: event.channel,
+          }));
+          console.log(`received the data channel from ${side}`);
+        }
+      });
     }
   }, [peerConnectionsMap, side, handleReceiveMessages]);
 
