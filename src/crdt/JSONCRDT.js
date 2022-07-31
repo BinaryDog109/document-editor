@@ -22,6 +22,30 @@ import LinkedList from "dbly-linked-list";
  */
 export const CRDTify = (editor, peerId, dataChannel) => {
   let original = JSON.stringify;
+  // The algorithm that ensure one clock is causally ready when sending to the other.
+  vc.isCausallyReady = (localClock, remoteClock, remoteClockId) => {
+    // allow this function to be called with objects that contain clocks, or the clocks themselves
+    if (localClock.clock) localClock = localClock.clock;
+    if (remoteClock.clock) remoteClock = remoteClock.clock;
+    const remoteClockOwnValue = remoteClock[remoteClockId] || 0;
+    const localClockRecordedRemoteClockValue = localClock[remoteClockId] || 0;
+    const keys = allKeys(localClock, remoteClock);
+
+    for (let key of keys) {
+
+      if (key === remoteClockId) continue;
+      const localValue = localClock[key] || 0;
+      const remoteValue = remoteClock[key] || 0;
+
+      if (remoteValue > localValue) return false;
+    }
+    if (remoteClockOwnValue - localClockRecordedRemoteClockValue <= 2)
+      return true;
+    else return false;
+  };
+  const clockA = { clock: { a: 1, b: 0, c: 0 } };
+  const clockB = { clock: { a: 1, b: 2, c: 0 } };
+  console.log({ isCausallyReady: vc.isCausallyReady(clockA, clockB, "b") });
 
   /** Overwrite JSON.stringify so that it wont stringify our circular references in the doubly linked list */
   JSON.stringify = function (item, replacer, space) {
@@ -63,25 +87,23 @@ export const CRDTify = (editor, peerId, dataChannel) => {
   const { insertBreak } = editor;
   // Overwrite insertBreak behaviour
   editor.insertBreak = () => {
-    const { selection } = editor
+    const { selection } = editor;
     if (selection) {
       const [nodes] = Editor.nodes(editor, {
-        match: n =>
-          !Editor.isEditor(n) &&
-          Element.isElement(n) &&
-          (n.type === 'paragraph')
-      })
+        match: (n) =>
+          !Editor.isEditor(n) && Element.isElement(n) && n.type === "paragraph",
+      });
 
-      if(nodes){
+      if (nodes) {
         Transforms.insertNodes(editor, {
-          children: [{text: ""}],
-          type: 'paragraph',
-          rga: new RGA()
-        })
-        return
+          children: [{ text: "" }],
+          type: "paragraph",
+          rga: new RGA(),
+        });
+        return;
       }
     }
-    insertBreak()
+    insertBreak();
   };
   const { onChange } = editor;
   editor.onChange = () => {
@@ -89,12 +111,12 @@ export const CRDTify = (editor, peerId, dataChannel) => {
     const crdtOps = mapOperationsFromSlate(editor, operations);
     const readyCRDTOps = executeUpstreamCRDTOps(editor, crdtOps);
     console.log({ readyCRDTOps });
-    readyCRDTOps.forEach(crdtOp => {
+    readyCRDTOps.forEach((crdtOp) => {
       // Send to buffer
-      const json = JSON.stringify(crdtOp)
-      bufferCRDTOperationJSON(editor, json)
-    })
-    console.log({buffer: editor.crdtOpJsonBuffer})
+      const json = JSON.stringify(crdtOp);
+      bufferCRDTOperationJSON(editor, json);
+    });
+    console.log({ buffer: editor.crdtOpJsonBuffer });
     onChange();
   };
 };
@@ -190,13 +212,8 @@ class RGA {
 }
 
 export function bufferCRDTOperationJSON(editor, opJson) {
-  if (!editor.crdtOpJsonBuffer) editor.crdtOpJsonBuffer = []
-  editor.crdtOpJsonBuffer.push(opJson)
-}
-
-export function handleMessageFromUpstream(event) {
-  const crdtOp = JSON.parse(event.data);
-  console.log({crdtOp})
+  if (!editor.crdtOpJsonBuffer) editor.crdtOpJsonBuffer = [];
+  editor.crdtOpJsonBuffer.push(opJson);
 }
 
 /**
@@ -349,3 +366,16 @@ export const findActualOffsetFromParagraphAt = (editor, point) => {
   }
   return offset;
 };
+// Helper function that helps generate all unique keys from two clocks
+function allKeys(a, b) {
+  var last = null;
+  return Object.keys(a)
+    .concat(Object.keys(b))
+    .sort()
+    .filter(function (item) {
+      // to make a set of sorted keys unique, just check that consecutive keys are different
+      var isDuplicate = item == last;
+      last = item;
+      return !isDuplicate;
+    });
+}

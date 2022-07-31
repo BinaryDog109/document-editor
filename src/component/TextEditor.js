@@ -20,7 +20,6 @@ import {
   CRDTify,
   findActualOffsetFromParagraphAt,
   findParagraphNodeEntryAt,
-  handleMessageFromUpstream,
 } from "../crdt/JSONCRDT";
 import { useWebRTCContext } from "../hooks/useWebRTCContext";
 
@@ -41,6 +40,11 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
     leftUser,
   } = useWebRTCContext();
 
+  const handleMessageFromUpstream = (event) => {
+    setCRDTSyncStatus("Received Ops");
+    const crdtOp = JSON.parse(event.data);
+    console.log({ crdtOp });
+  };
   const handleSendCRDTOperationJson = (e) => {
     const dataChannelMapKeys = Object.keys(dataChannelMap);
     if (!dataChannelMapKeys.length) return;
@@ -77,6 +81,7 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
       peerConnectionsMapKeys.forEach((otherUserId) => {
         const dataChannel =
           peerConnectionsMap[otherUserId].createDataChannel("crdtChannel");
+        setCRDTSyncStatus("Channel Created");
         dataChannel.onmessage = handleMessageFromUpstream;
         setDataChannelMap((prev) => ({
           ...prev,
