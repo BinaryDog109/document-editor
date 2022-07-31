@@ -43,9 +43,6 @@ export const CRDTify = (editor, peerId, dataChannel) => {
       return true;
     else return false;
   };
-  const clockA = { clock: { a: 1, b: 0, c: 0 } };
-  const clockB = { clock: { a: 1, b: 2, c: 0 } };
-  console.log({ isCausallyReady: vc.isCausallyReady(clockA, clockB, "b") });
 
   /** Overwrite JSON.stringify so that it wont stringify our circular references in the doubly linked list */
   JSON.stringify = function (item, replacer, space) {
@@ -113,10 +110,9 @@ export const CRDTify = (editor, peerId, dataChannel) => {
     console.log({ readyCRDTOps });
     readyCRDTOps.forEach((crdtOp) => {
       // Send to buffer
-      const json = JSON.stringify(crdtOp);
-      bufferCRDTOperationJSON(editor, json);
+      bufferCRDTOperation(editor, crdtOp);
     });
-    console.log({ buffer: editor.crdtOpJsonBuffer });
+    console.log({ buffer: editor.crdtOpBuffer });
     onChange();
   };
 };
@@ -125,7 +121,7 @@ class RGA {
   constructor() {
     this.list = new LinkedList();
     this.list.tombStoneCount = 0;
-    this.nodeMap = new Map();
+    this.chracterLinkedNodeMap = new Map();
   }
   getFirstVisibleNode() {
     let head = this.list.getHeadNode();
@@ -211,9 +207,38 @@ class RGA {
   }
 }
 
-export function bufferCRDTOperationJSON(editor, opJson) {
-  if (!editor.crdtOpJsonBuffer) editor.crdtOpJsonBuffer = [];
-  editor.crdtOpJsonBuffer.push(opJson);
+export function bufferCRDTOperation(editor, op) {
+  if (!editor.crdtOpBuffer) editor.crdtOpBuffer = [];
+  editor.crdtOpBuffer.push(op);
+}
+
+/**
+ * 
+ * @param {Editor} editor 
+ * @param {CRDTOperation} crdtOp 
+ */
+function executeDownstreamSingleCRDTOp(editor, crdtOp) {
+    const { type, index, insertAfterNodeId, node, paragraphPath, vectorClock: remoteVectorClock } = crdtOp
+    // merge remote with local vector clock, increment it
+    vc.merge(editor.vectorClock, remoteVectorClock)
+    vc.increment(editor.vectorClock, editor.peerId);
+    if (type === "insert_text") {
+      // Locate the paragraph and rga this node was inserted in
+      const [paragraphNode, path] = Editor.node(editor, paragraphPath);
+      /**@type {RGA} */
+      const rga = paragraphNode.rga;
+      if (insertAfterNodeId === '') {
+        // '' means insert after head
+        rga.list.insert(node)
+        rga.nodeMap.set(node.getId(), node)
+      }
+      else {
+        // Retreive reference node from the map
+        const insertAfterNode = rga.nodeMap.get(insertAfterNodeId)
+        
+
+      }
+    }
 }
 
 /**
@@ -237,6 +262,7 @@ function executeUpstreamCRDTOps(editor, crdtOps) {
       /**@type {RGA} */
       const rga = paragraphNode.rga;
       // Look for the "insert after" node's id. If it is '', it means insert at the beginning
+      let insertedLinkedNode
       let insertAfterNode;
       // Insert to the end of the list as much as it can
       if (
@@ -246,25 +272,26 @@ function executeUpstreamCRDTOps(editor, crdtOps) {
         Node.string(paragraphNode).length === index + 1
       ) {
         rga.list.insert(node);
+        insertedLinkedNode = rga.list.getTailNode()
         insertAfterNode = rga.list.getTailNode().prev;
       } else {
         // traverse through visible nodes
-        const insertedNode = rga.insertAtAndReturnNode(index, node);
-        insertAfterNode = insertedNode.prev;
+        insertedLinkedNode = rga.insertAtAndReturnNode(index, node);
+        insertAfterNode = insertedLinkedNode.prev;
       }
       const insertAfterNodeId = insertAfterNode
         ? insertAfterNode.data.getId()
         : "";
 
       op.setinsertAfterNodeId(insertAfterNodeId);
-      rga.nodeMap.set(node.getId(), node);
+      rga.chracterLinkedNodeMap.set(node.getId(), insertedLinkedNode);
     }
     if (type === "remove_text") {
       const [paragraphNode, path] = Editor.node(editor, op.paragraphPath);
       /**@type {RGA} */
       const rga = paragraphNode.rga;
-      const map = rga.nodeMap;
-      map.get(op.deletedNodeId).isTombStoned = true;
+      const map = rga.chracterLinkedNodeMap;
+      map.get(op.deletedNodeId).data.isTombStoned = true;
       rga.list.tombStoneCount++;
     }
   });
