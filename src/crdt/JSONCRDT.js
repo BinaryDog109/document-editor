@@ -205,14 +205,50 @@ class RGA {
 
     return newNode;
   }
+  downStreamInsert(node, referenceLinkedNode) {
+    const oldNextLinkedNode =
+      referenceLinkedNode !== ""
+        ? referenceLinkedNode.next
+        : this.list.getHeadNode();
+    let current = oldNextLinkedNode;
+    console.log("The ref node's next: ", current);
+    while (
+      current !== null &&
+      isLargerThanForCharacterNode(current.data, node)
+    ) {
+      // Look for the first sussessor node that is less
+      current = current.next;
+    }
+    let insertedLinkedNode;
+    if (current === null) {
+      this.list.insert(node);
+      insertedLinkedNode = this.list.getTailNode();
+    } else {
+      const newLinkedNode = this.list.createNewNode(node);
+      const oldPrev = current.prev;
+      if (oldPrev === null) {
+        this.list.insertFirst(node);
+        insertedLinkedNode = this.list.getHeadNode();
+      } else {
+        oldPrev.next = newLinkedNode;
+        newLinkedNode.prev = oldPrev;
+        newLinkedNode.next = current;
+        current.prev = newLinkedNode;
+        insertedLinkedNode = newLinkedNode;
+        this.list.size++
+      }
+    }
+    this.chracterLinkedNodeMap.set(
+      getIdForCharacterNode(node),
+      insertedLinkedNode
+    );
+  }
 }
 
 export function bufferCRDTOperation(editor, op) {
   if (!editor.crdtOpBuffer) editor.crdtOpBuffer = [];
   editor.crdtOpBuffer.push(op);
 }
-
-
 
 /**
  *
@@ -240,35 +276,32 @@ export function executeDownstreamSingleCRDTOp(editor, crdtOp) {
     console.log("inserting node to the current linked list");
     if (insertAfterNodeId === "") {
       // '' means insert after head
-      rga.list.insertFirst(node);
-      rga.chracterLinkedNodeMap.set(getIdForCharacterNode(node), rga.list.getHeadNode());
+      const head = rga.list.getHeadNode();
+      if (!head) {
+        rga.list.insertFirst(node);
+        rga.chracterLinkedNodeMap.set(
+          getIdForCharacterNode(node),
+          rga.list.getHeadNode()
+        );
+      } else {
+        // If there is only one element, make '' to be the reference node
+        rga.downStreamInsert(node, "");
+      }
     } else {
       // Retreive reference node from the map
       const insertAfterLinkedNode =
         rga.chracterLinkedNodeMap.get(insertAfterNodeId);
-      const oldNextLinkedNode = insertAfterLinkedNode.next;
-      let current = oldNextLinkedNode;
-      console.log("The ref node's next: ", current)
-      while (current !== null && isLargerThanForCharacterNode(current.data, node)) {
-        // Look for the first sussessor node that is less
-        current = current.next;
-      }
-      let insertedLinkedNode;
-      if (current === null) {
-        rga.list.insert(node);
-        insertedLinkedNode = rga.list.getTailNode();
-      } else {
-        const newLinkedNode = rga.list.createNewNode(node);
-        const oldPrev = current.prev;
-        oldPrev.next = newLinkedNode;
-        newLinkedNode.prev = oldPrev;
-        newLinkedNode.next = current;
-        current.prev = newLinkedNode;
-        insertedLinkedNode = newLinkedNode;
-      }
-      rga.chracterLinkedNodeMap.set(getIdForCharacterNode(node), insertedLinkedNode);
+      rga.downStreamInsert(node, insertAfterLinkedNode);
     }
     console.log("node inserted, ", { rga });
+  } else if (type === "remove_text") {
+    const [paragraphNode, path] = Editor.node(editor, paragraphPath);
+    /**@type {RGA} */
+    const rga = paragraphNode.rga;
+    const map = rga.chracterLinkedNodeMap;
+    map.get(crdtOp.deletedNodeId).data.isTombStoned = true;
+    rga.list.tombStoneCount++;
+    console.log("node deleted in linked list", { rga });
   }
 }
 
@@ -315,7 +348,10 @@ function executeUpstreamCRDTOps(editor, crdtOps) {
         : "";
 
       setInsertAfterNodeIdForCRDTOp(op, insertAfterNodeId);
-      rga.chracterLinkedNodeMap.set(getIdForCharacterNode(node), insertedLinkedNode);
+      rga.chracterLinkedNodeMap.set(
+        getIdForCharacterNode(node),
+        insertedLinkedNode
+      );
     }
     if (type === "remove_text") {
       const [paragraphNode, path] = Editor.node(editor, op.paragraphPath);
@@ -390,7 +426,10 @@ function mapOperationsFromSlate(editor, slateOps) {
             actualOffset++,
             paragraphPath
           );
-          setDeletedNodeIdForCRDTOp(crdtOp, getIdForCharacterNode(nodeToBeDeleted.data));
+          setDeletedNodeIdForCRDTOp(
+            crdtOp,
+            getIdForCharacterNode(nodeToBeDeleted.data)
+          );
           crdtOps.push(crdtOp);
         });
       }
@@ -439,33 +478,33 @@ function allKeys(a, b) {
 }
 // CRDTOperation Helpers
 function setInsertAfterNodeIdForCRDTOp(crdtOp, insertAfterNodeId) {
-  if (crdtOp.type !== 'insert_text') {
-      throw Error("Wrong type of operation!")
+  if (crdtOp.type !== "insert_text") {
+    throw Error("Wrong type of operation!");
   }
-  crdtOp.insertAfterNodeId = insertAfterNodeId
+  crdtOp.insertAfterNodeId = insertAfterNodeId;
 }
 function setDeletedNodeIdForCRDTOp(crdtOp, deletedNodeId) {
-  crdtOp.deletedNodeId = deletedNodeId
+  crdtOp.deletedNodeId = deletedNodeId;
 }
 // CharacterNode Helpers
 function getIdForCharacterNode(chNode) {
   // An id is sum of the vector clock + peerId
-  const {clock} = chNode.vectorClock
-  let sum = 0
-  Object.keys(clock).forEach(peerId => {
-      sum += clock[peerId]
-  })
-  return `${sum}-${chNode.peerId}`
+  const { clock } = chNode.vectorClock;
+  let sum = 0;
+  Object.keys(clock).forEach((peerId) => {
+    sum += clock[peerId];
+  });
+  return `${sum}-${chNode.peerId}`;
 }
 
 /**
-* 
-* @param {CharacterNode} otherCharNode 
-*/
+ *
+ * @param {CharacterNode} otherCharNode
+ */
 function isLargerThanForCharacterNode(chNode, otherCharNode) {
-  const thisIdArray = getIdForCharacterNode(chNode).split('-')
-  const otherIdArray = getIdForCharacterNode(otherCharNode).split('-')
-  const isNumLarger = Number(thisIdArray[0]) > Number(otherIdArray[0])
-  const isStrLarger = thisIdArray[1] > otherIdArray[1]
-  return isNumLarger && isStrLarger
+  const thisIdArray = getIdForCharacterNode(chNode).split("-");
+  const otherIdArray = getIdForCharacterNode(otherCharNode).split("-");
+  const isNumLarger = Number(thisIdArray[0]) > Number(otherIdArray[0]);
+  const isStrLarger = thisIdArray[1] > otherIdArray[1];
+  return isNumLarger || (Number(thisIdArray[0]) === Number(otherIdArray[0]) && isStrLarger);
 }
