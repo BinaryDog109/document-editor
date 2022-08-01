@@ -8,7 +8,7 @@ import {
   toggleLinkNode,
 } from "../utility/EditorStyleUtils";
 import { useSlateStatic } from "slate-react";
-import { Transforms } from "slate";
+import { Editor, Path, Transforms } from "slate";
 
 export const Toolbar = ({ selection }) => {
   const editor = useSlateStatic();
@@ -30,11 +30,28 @@ export const Toolbar = ({ selection }) => {
     <div className={styles.toolbar}>
       <button
         onMouseDown={() => {
-          editor.apply({
-            node: { text: "Y" },
-            path: [0, 2],
-            type: "insert_node",
-          });
+          // editor.apply({
+          //   node: { text: "Y" },
+          //   path: [0, 1],
+          //   type: "insert_node",
+          //   isRemote: false
+          // });
+          try {
+            // Path.previous just decrease a num
+            // console.log(Path.previous([1]))
+            // console.log(Editor.node(editor, [0,0]))
+            editor.apply({
+              // No problem when offset is very big
+              offset: 200,
+              path: [0, 0],
+              text: "a",
+              type: "remove_text",
+              isRemote: true
+            });
+          } catch (error) {
+            console.log(error.message);
+            console.log("no text node here!");
+          }
         }}
       >
         Click

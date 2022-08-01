@@ -2,7 +2,7 @@ import HLC from "../utility/HybridLogicalClock"
 import { CharacterNode } from "./CharacterNode"
 
 export class CRDTOperation {
-    constructor(type, node, index, paragraphPath) {
+    constructor(type, node, index, paragraphPath, slateTargetPath, slateTargetOffset) {
         this.type = type
         
         if (node)
@@ -10,6 +10,8 @@ export class CRDTOperation {
             this.node = node
         if (index > -1) this.index = index
         if (paragraphPath) this.paragraphPath = paragraphPath
+        if (slateTargetPath) this.slateTargetPath = slateTargetPath
+        if (slateTargetOffset) this.slateTargetOffset = slateTargetOffset
     }
     
 }

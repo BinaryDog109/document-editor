@@ -123,13 +123,13 @@ class RGA {
     Object.defineProperty(this, "list", {
       value: 0, // better than `undefined`
       writable: true, // important!
-      enumerable: false, 
+      enumerable: false,
       configurable: true, // nice to have
     });
     Object.defineProperty(this, "chracterLinkedNodeMap", {
       value: 0, // better than `undefined`
       writable: true, // important!
-      enumerable: false, 
+      enumerable: false,
       configurable: true, // nice to have
     });
     this.list = new LinkedList();
@@ -317,28 +317,64 @@ export function executeDownstreamSingleCRDTOp(editor, crdtOp) {
   }
 }
 
-function mapSingleOperationFromCRDT(editor, crdtOp) {
+export function mapSingleOperationFromCRDT(editor, crdtOp) {
   const {
     type,
     index,
     insertAfterNodeId,
     node,
     paragraphPath,
+    slateTargetPath,
+    slateTargetOffset,
     vectorClock: remoteVectorClock,
   } = crdtOp;
-  const [paragraphNode, path] = Editor.node(editor, paragraphPath);
-  let offsetMark = index;
-  let textPath = [...paragraphPath];
-  const textsGenerator = Node.texts(paragraphNode);
-  for (let [textNode, relativePath] of textsGenerator) {
-    const textLength = textNode.text.length;
-    offsetMark -= textLength;
-    if (offsetMark <= 0) {
-      // Found our text node
-      textPath.concat(relativePath);
-      break;
+  const slateOps = [];
+  if (type === "insert_text") {
+    let textPath = [...slateTargetPath];
+    const textOffset = slateTargetOffset;
+    // If this text node hasnt been deleted beforehand
+    if (Editor.node(editor, textPath)) {
+      const slateOp = {
+        // No problem when offset is very big
+        offset: textOffset,
+        path: textPath,
+        text: node.char,
+        type: "insert_text",
+        // Added isRemote flag so slatejs onChange wont modify the linked list again
+        isRemote: true,
+      };
+      slateOps.push(slateOp);
+    } else {
+      // If this text node has been deleted, loop until it finds its previous text node
+      while (Path.hasPrevious(textPath)) {
+        textPath = Path.previous(textPath);
+      }
+      const slateOp = {
+        node: { text: node.char },
+        path: textPath,
+        // Use insert_node operation for more general purpose insertion
+        // ! Maybe include mark information later
+        type: "insert_node",
+        isRemote: true,
+      };
+      slateOps.push(slateOp);
+    }
+  } else if (type === "remove_text") {
+    let textPath = [...slateTargetPath];
+    const textOffset = slateTargetOffset;
+    // Only deletes it when it exists
+    if (Editor.node(editor, textPath)) {
+      const slateOp = {
+        offset: textOffset,
+        path: textPath,
+        text: node.char,
+        type: "remove_text",
+        isRemote: true,
+      };
+      slateOps.push(slateOp);
     }
   }
+  return slateOps
 }
 
 /**
@@ -400,7 +436,27 @@ function executeUpstreamCRDTOps(editor, crdtOps) {
   });
   return crdtOps;
 }
-
+function findTextPathFromActualOffsetOfParagraphPath(
+  editor,
+  paragraphPath,
+  actualOffset
+) {
+  const [paragraphNode, path] = Editor.node(editor, paragraphPath);
+  let offsetMark = actualOffset;
+  let textPath = [...paragraphPath];
+  const textsGenerator = Node.texts(paragraphNode);
+  for (let [textNode, relativePath] of textsGenerator) {
+    const textLength = textNode.text.length;
+    offsetMark -= textLength;
+    if (offsetMark <= 0) {
+      // Found our text node
+      textPath.concat(relativePath);
+      break;
+    }
+  }
+  // If, sadly, local user deletes some text nodes
+  return textPath;
+}
 /**
  *
  * @param {Operation[]} slateOps
@@ -408,28 +464,33 @@ function executeUpstreamCRDTOps(editor, crdtOps) {
  */
 function mapOperationsFromSlate(editor, slateOps) {
   const crdtOps = [];
-  slateOps.forEach((slateOp) => {
+  for (let slateOp of slateOps) {
     /**
-     * Example:
-     * insert_text: {
-      offset: 1
-      path: (2) [0, 0]
-      text: "a"
-      type: "insert_text"
-      }
-      insert_node (happens when copying and pasting): {
-        node: {text: 'q'}
-        path: (2) [1, 2]
-        type: "insert_node"
-      }
+     *  Example:
+     *  insert_text: {
+        offset: 1
+        path: (2) [0, 0]
+        text: "a"
+        type: "insert_text"
+        }
+        insert_node (happens when copying and pasting): {
+          node: {text: 'q'}
+          path: (2) [1, 2]
+          type: "insert_node"
+        }
      */
+    // Ignore the changes from remote peer
+    if (slateOp.isRemote) {
+      continue;
+    }
     if (slateOp.type === "insert_text" || slateOp.type === "remove_text") {
+      const slatePath = [...slateOp.path];
       const [paragraph, paragraphPath] = findParagraphNodeEntryAt(
         editor,
-        slateOp.path
+        slatePath
       );
       let actualOffset = findActualOffsetFromParagraphAt(editor, {
-        path: slateOp.path,
+        path: slatePath,
         offset: slateOp.offset,
       });
       const chars = slateOp.text.split("");
@@ -440,7 +501,9 @@ function mapOperationsFromSlate(editor, slateOps) {
             slateOp.type,
             characterNode,
             actualOffset++,
-            paragraphPath
+            paragraphPath,
+            slatePath,
+            slateOp.offset
           );
           crdtOps.push(crdtOp);
         });
@@ -470,7 +533,7 @@ function mapOperationsFromSlate(editor, slateOps) {
         });
       }
     }
-  });
+  }
 
   return crdtOps;
 }
