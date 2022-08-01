@@ -11,7 +11,7 @@ export class CRDTOperation {
         if (index > -1) this.index = index
         if (paragraphPath) this.paragraphPath = paragraphPath
         if (slateTargetPath) this.slateTargetPath = slateTargetPath
-        if (slateTargetOffset) this.slateTargetOffset = slateTargetOffset
+        if (slateTargetOffset >= 0) this.slateTargetOffset = slateTargetOffset
     }
     
 }

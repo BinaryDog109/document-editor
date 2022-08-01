@@ -9,6 +9,7 @@ import {
 } from "../utility/EditorStyleUtils";
 import { useSlateStatic } from "slate-react";
 import { Editor, Path, Transforms } from "slate";
+import { findActualOffsetFromParagraphAt, findTextPathFromActualOffsetOfParagraphPath } from "../crdt/JSONCRDT";
 
 export const Toolbar = ({ selection }) => {
   const editor = useSlateStatic();
@@ -37,17 +38,20 @@ export const Toolbar = ({ selection }) => {
           //   isRemote: false
           // });
           try {
+            const [textPath, offset] = findTextPathFromActualOffsetOfParagraphPath(editor, [0], 7)
+            console.log({textPath, offset})
+
             // Path.previous just decrease a num
             // console.log(Path.previous([1]))
             // console.log(Editor.node(editor, [0,0]))
-            editor.apply({
-              // No problem when offset is very big
-              offset: 200,
-              path: [0, 0],
-              text: "a",
-              type: "remove_text",
-              isRemote: true
-            });
+            // editor.apply({
+            //   // No problem when offset is very big
+            //   offset: 200,
+            //   path: [0, 0],
+            //   text: "a",
+            //   type: "remove_text",
+            //   isRemote: true
+            // });
           } catch (error) {
             console.log(error.message);
             console.log("no text node here!");

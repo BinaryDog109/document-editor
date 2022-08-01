@@ -168,6 +168,26 @@ class RGA {
     }
     return current;
   }
+  findVisibleIndexOf(linkedNode) {
+    this.list.iterator.reset();
+    var current;
+
+    var index = 0;
+
+    // iterate over the list (keeping track of the index value) until
+    // we find the node containg the nodeData we are looking for
+    while (this.list.iterator.hasNext()) {
+        current = this.list.iterator.next();
+        if (linkedNode === current) {
+            return index;
+        }
+        if (current && !current.data.isTombStoned)
+          index += 1;
+    }
+
+    // only get here if we didn't find a node containing the nodeData
+    return -1;
+}
 
   insertAtAndReturnNode(index, data) {
     var current = this.list.getHeadNode(),
@@ -218,7 +238,7 @@ class RGA {
 
     return newNode;
   }
-  downStreamInsert(node, referenceLinkedNode) {
+  downStreamInsert(node, referenceLinkedNode, crdtOp) {
     const oldNextLinkedNode =
       referenceLinkedNode !== ""
         ? referenceLinkedNode.next
@@ -228,9 +248,11 @@ class RGA {
     while (
       current !== null &&
       isLargerThanForCharacterNode(current.data, node)
+      && !current.data.isTombStoned
     ) {
       // Look for the first sussessor node that is less
       current = current.next;
+      
     }
     let insertedLinkedNode;
     if (current === null) {
@@ -255,6 +277,8 @@ class RGA {
       getIdForCharacterNode(node),
       insertedLinkedNode
     );
+    // Append the updated visible index of this operation
+    crdtOp.index = this.findVisibleIndexOf(insertedLinkedNode)
   }
 }
 
@@ -285,7 +309,7 @@ export function executeDownstreamSingleCRDTOp(editor, crdtOp) {
     const [paragraphNode, path] = Editor.node(editor, paragraphPath);
     /**@type {RGA} */
     const rga = paragraphNode.rga;
-    console.log("inserting node to the current linked list");
+    console.log("inserting node to the current linked list, after: ", insertAfterNodeId);
     if (insertAfterNodeId === "") {
       // '' means insert after head
       const head = rga.list.getHeadNode();
@@ -297,13 +321,13 @@ export function executeDownstreamSingleCRDTOp(editor, crdtOp) {
         );
       } else {
         // If there is only one element, make '' to be the reference node
-        rga.downStreamInsert(node, "");
+        rga.downStreamInsert(node, "", crdtOp);
       }
     } else {
       // Retreive reference node from the map
       const insertAfterLinkedNode =
         rga.chracterLinkedNodeMap.get(insertAfterNodeId);
-      rga.downStreamInsert(node, insertAfterLinkedNode);
+      rga.downStreamInsert(node, insertAfterLinkedNode, crdtOp);
     }
     console.log("node inserted, ", { rga });
   } else if (type === "remove_text") {
@@ -311,10 +335,13 @@ export function executeDownstreamSingleCRDTOp(editor, crdtOp) {
     /**@type {RGA} */
     const rga = paragraphNode.rga;
     const map = rga.chracterLinkedNodeMap;
+    // Before deletion, update its visible ID
+    crdtOp.index = rga.findVisibleIndexOf(map.get(crdtOp.deletedNodeId))
     map.get(crdtOp.deletedNodeId).data.isTombStoned = true;
     rga.list.tombStoneCount++;
     console.log("node deleted in linked list", { rga });
   }
+  return crdtOp;
 }
 
 export function mapSingleOperationFromCRDT(editor, crdtOp) {
@@ -325,18 +352,18 @@ export function mapSingleOperationFromCRDT(editor, crdtOp) {
     node,
     paragraphPath,
     slateTargetPath,
-    slateTargetOffset,
     vectorClock: remoteVectorClock,
   } = crdtOp;
+  const [_, actualTextOffset] = findTextPathFromActualOffsetOfParagraphPath(editor, paragraphPath, index)
   const slateOps = [];
   if (type === "insert_text") {
     let textPath = [...slateTargetPath];
-    const textOffset = slateTargetOffset;
     // If this text node hasnt been deleted beforehand
     if (Editor.node(editor, textPath)) {
+      
       const slateOp = {
         // No problem when offset is very big
-        offset: textOffset,
+        offset: actualTextOffset,
         path: textPath,
         text: node.char,
         type: "insert_text",
@@ -345,7 +372,7 @@ export function mapSingleOperationFromCRDT(editor, crdtOp) {
       };
       slateOps.push(slateOp);
     } else {
-      // If this text node has been deleted, loop until it finds its previous text node
+      // If this text node has been deleted, loop until it finds its previous text node. Offset doesnt matter here.
       while (Path.hasPrevious(textPath)) {
         textPath = Path.previous(textPath);
       }
@@ -361,7 +388,7 @@ export function mapSingleOperationFromCRDT(editor, crdtOp) {
     }
   } else if (type === "remove_text") {
     let textPath = [...slateTargetPath];
-    const textOffset = slateTargetOffset;
+    const textOffset = actualTextOffset;
     // Only deletes it when it exists
     if (Editor.node(editor, textPath)) {
       const slateOp = {
@@ -374,7 +401,33 @@ export function mapSingleOperationFromCRDT(editor, crdtOp) {
       slateOps.push(slateOp);
     }
   }
-  return slateOps
+  return slateOps;
+}
+
+export function findTextPathFromActualOffsetOfParagraphPath(
+  editor,
+  paragraphPath,
+  visibleIndex
+) {
+  console.log("actual index: ", visibleIndex)
+  const [paragraphNode] = Editor.node(editor, paragraphPath);
+  let offsetMark = visibleIndex;
+  let textPath = [...paragraphPath, 0]; // From the first text node
+  const textsGenerator = Node.texts(paragraphNode);
+  for (let [textNode, relativePath] of textsGenerator) {
+    console.log("looping through text nodes: ", textNode.text, relativePath)
+    const textLength = textNode.text.length;
+    if (offsetMark - textLength > 0) {
+      offsetMark -= textLength
+      continue
+    }    
+    else {
+      // Found our text node and index
+      textPath.pop()
+      textPath = textPath.concat(relativePath);      
+      return [textPath, offsetMark]
+    }
+  }
 }
 
 /**
@@ -426,6 +479,7 @@ function executeUpstreamCRDTOps(editor, crdtOps) {
       );
     }
     if (type === "remove_text") {
+      // Visible index is op.index
       const [paragraphNode, path] = Editor.node(editor, op.paragraphPath);
       /**@type {RGA} */
       const rga = paragraphNode.rga;
@@ -436,27 +490,7 @@ function executeUpstreamCRDTOps(editor, crdtOps) {
   });
   return crdtOps;
 }
-function findTextPathFromActualOffsetOfParagraphPath(
-  editor,
-  paragraphPath,
-  actualOffset
-) {
-  const [paragraphNode, path] = Editor.node(editor, paragraphPath);
-  let offsetMark = actualOffset;
-  let textPath = [...paragraphPath];
-  const textsGenerator = Node.texts(paragraphNode);
-  for (let [textNode, relativePath] of textsGenerator) {
-    const textLength = textNode.text.length;
-    offsetMark -= textLength;
-    if (offsetMark <= 0) {
-      // Found our text node
-      textPath.concat(relativePath);
-      break;
-    }
-  }
-  // If, sadly, local user deletes some text nodes
-  return textPath;
-}
+
 /**
  *
  * @param {Operation[]} slateOps
@@ -521,9 +555,10 @@ function mapOperationsFromSlate(editor, slateOps) {
           const nodeToBeDeleted = rga.findRGANodeAt(actualOffset);
           const crdtOp = new CRDTOperation(
             slateOp.type,
-            undefined,
+            nodeToBeDeleted.data,
             actualOffset++,
-            paragraphPath
+            paragraphPath,
+            slatePath
           );
           setDeletedNodeIdForCRDTOp(
             crdtOp,

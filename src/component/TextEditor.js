@@ -21,6 +21,7 @@ import {
   executeDownstreamSingleCRDTOp,
   findActualOffsetFromParagraphAt,
   findParagraphNodeEntryAt,
+  mapSingleOperationFromCRDT,
 } from "../crdt/JSONCRDT";
 import { useWebRTCContext } from "../hooks/useWebRTCContext";
 
@@ -46,6 +47,10 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
     const crdtOp = JSON.parse(event.data);
     // After json, original crdt object methods will be lost, so add them back
     executeDownstreamSingleCRDTOp(editor, crdtOp);
+    const slateOps = mapSingleOperationFromCRDT(editor, crdtOp)
+    slateOps.forEach(op => {
+      editor.apply(op)
+    })
   };
   const handleSendCRDTOperationJson = (e) => {
     const dataChannelMapKeys = Object.keys(dataChannelMap);
