@@ -45,24 +45,26 @@ export const CRDTify = (editor, peerId, dataChannel) => {
   };
 
   /** Overwrite JSON.stringify so that it wont stringify our circular references in the doubly linked list */
-  JSON.stringify = function (item, replacer, space) {
-    // Keep other JSON call passed
-    if (typeof item[0] !== "object" || item[0].type !== "paragraph") {
-      return original(item, replacer, space);
-    }
-    // item is an array here
-    const items = item;
-    const newItems = [];
-    items.forEach((element) => {
-      const newElem = { ...element };
-      if (element.type === "paragraph" && element.rga) {
-        delete newElem["rga"];
-      }
-      newItems.push(newElem);
-    });
+  // Seems to be uneccesary after setting the doubly linked list property to unenumerable.
+  // JSON.stringify = function (item, replacer, space) {
+  //   console.log({item})
+  //   // Keep other JSON call passed
+  //   if (typeof item[0] !== "object" || item[0].type !== "paragraph") {
+  //     return original(item, replacer, space);
+  //   }
+  //   // item is an array here
+  //   const items = item;
+  //   const newItems = [];
+  //   items.forEach((element) => {
+  //     const newElem = { ...element };
+  //     if (element.type === "paragraph" && element.rga) {
+  //       delete newElem["rga"];
+  //     }
+  //     newItems.push(newElem);
+  //   });
 
-    return original(newItems, replacer, space);
-  };
+  //   return original(newItems, replacer, space);
+  // };
   editor.peerId = peerId;
   editor.vectorClock = { clock: {} };
   // Setting rga for every paragraph
@@ -78,7 +80,6 @@ export const CRDTify = (editor, peerId, dataChannel) => {
   // called on every node update
   editor.normalizeNode = (entry) => {
     const [node, path] = entry;
-
     normalizeNode(entry);
   };
   const { insertBreak } = editor;
@@ -119,6 +120,18 @@ export const CRDTify = (editor, peerId, dataChannel) => {
 
 class RGA {
   constructor() {
+    Object.defineProperty(this, "list", {
+      value: 0, // better than `undefined`
+      writable: true, // important!
+      enumerable: false, 
+      configurable: true, // nice to have
+    });
+    Object.defineProperty(this, "chracterLinkedNodeMap", {
+      value: 0, // better than `undefined`
+      writable: true, // important!
+      enumerable: false, 
+      configurable: true, // nice to have
+    });
     this.list = new LinkedList();
     this.list.tombStoneCount = 0;
     this.chracterLinkedNodeMap = new Map();
@@ -235,7 +248,7 @@ class RGA {
         newLinkedNode.next = current;
         current.prev = newLinkedNode;
         insertedLinkedNode = newLinkedNode;
-        this.list.size++
+        this.list.size++;
       }
     }
     this.chracterLinkedNodeMap.set(
@@ -264,7 +277,6 @@ export function executeDownstreamSingleCRDTOp(editor, crdtOp) {
     paragraphPath,
     vectorClock: remoteVectorClock,
   } = crdtOp;
-  console.log({ node });
   // merge remote with local vector clock, increment it
   vc.merge(editor.vectorClock, remoteVectorClock);
   vc.increment(editor.vectorClock, editor.peerId);
@@ -302,6 +314,30 @@ export function executeDownstreamSingleCRDTOp(editor, crdtOp) {
     map.get(crdtOp.deletedNodeId).data.isTombStoned = true;
     rga.list.tombStoneCount++;
     console.log("node deleted in linked list", { rga });
+  }
+}
+
+function mapSingleOperationFromCRDT(editor, crdtOp) {
+  const {
+    type,
+    index,
+    insertAfterNodeId,
+    node,
+    paragraphPath,
+    vectorClock: remoteVectorClock,
+  } = crdtOp;
+  const [paragraphNode, path] = Editor.node(editor, paragraphPath);
+  let offsetMark = index;
+  let textPath = [...paragraphPath];
+  const textsGenerator = Node.texts(paragraphNode);
+  for (let [textNode, relativePath] of textsGenerator) {
+    const textLength = textNode.text.length;
+    offsetMark -= textLength;
+    if (offsetMark <= 0) {
+      // Found our text node
+      textPath.concat(relativePath);
+      break;
+    }
   }
 }
 
@@ -506,5 +542,8 @@ function isLargerThanForCharacterNode(chNode, otherCharNode) {
   const otherIdArray = getIdForCharacterNode(otherCharNode).split("-");
   const isNumLarger = Number(thisIdArray[0]) > Number(otherIdArray[0]);
   const isStrLarger = thisIdArray[1] > otherIdArray[1];
-  return isNumLarger || (Number(thisIdArray[0]) === Number(otherIdArray[0]) && isStrLarger);
+  return (
+    isNumLarger ||
+    (Number(thisIdArray[0]) === Number(otherIdArray[0]) && isStrLarger)
+  );
 }

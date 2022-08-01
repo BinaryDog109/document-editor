@@ -8,7 +8,7 @@ import {
   toggleLinkNode,
 } from "../utility/EditorStyleUtils";
 import { useSlateStatic } from "slate-react";
-
+import { Transforms } from "slate";
 
 export const Toolbar = ({ selection }) => {
   const editor = useSlateStatic();
@@ -28,6 +28,17 @@ export const Toolbar = ({ selection }) => {
   };
   return (
     <div className={styles.toolbar}>
+      <button
+        onMouseDown={() => {
+          editor.apply({
+            node: { text: "Y" },
+            path: [0, 2],
+            type: "insert_node",
+          });
+        }}
+      >
+        Click
+      </button>
       <button
         title="Bold"
         id="bold"
@@ -103,7 +114,7 @@ export const Toolbar = ({ selection }) => {
       >
         <i className="fa-solid fa-subscript"></i>
       </button>
-      
+
       {/* <!-- List operations --> */}
       {/* <button id="insertOrderedList" className="${styles["operation-button"]}">
         <i className="fa-solid fa-list-ol"></i>

@@ -1,7 +1,7 @@
 // Import the Slate editor factory.
 import styles from "./TextEditor.module.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createEditor, Node } from "slate";
+import { createEditor, Editor, Node } from "slate";
 
 import vc from "vectorclock";
 
@@ -126,7 +126,6 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
   const onChangeHandler = useCallback(
     (e) => {
       console.log("document change!", e, editor.selection, editor.operations);
-
       // detectLinkText(editor);
       const document = e;
       onChange(document);
