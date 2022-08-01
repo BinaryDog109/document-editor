@@ -20,4 +20,15 @@ export class CharacterNode {
     setTombStoned() {
         this.isTombStoned = true
     }
+    /**
+     * 
+     * @param {CharacterNode} otherCharNode 
+     */
+    isLargerThan(otherCharNode) {
+        const thisIdArray = this.getId().split('-')
+        const otherIdArray = otherCharNode.getId().split('-')
+        const isNumLarger = Number(thisIdArray[0]) > Number(otherIdArray[0])
+        const isStrLarger = thisIdArray[1] > otherIdArray[1]
+        return isNumLarger && isStrLarger
+    }
 }

@@ -11,13 +11,5 @@ export class CRDTOperation {
         if (index > -1) this.index = index
         if (paragraphPath) this.paragraphPath = paragraphPath
     }
-    setinsertAfterNodeId(insertAfterNodeId) {
-        if (this.type !== 'insert_text') {
-            throw Error("Wrong type of operation!")
-        }
-        this.insertAfterNodeId = insertAfterNodeId
-    }
-    setDeletedNodeId(deletedNodeId) {
-        this.deletedNodeId = deletedNodeId
-    }
+    
 }

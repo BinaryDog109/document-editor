@@ -16,6 +16,7 @@ import { toJSON } from "./Utilities";
 import { CharacterNode } from "./CharacterNode";
 // import FastList from "fast-list";
 import LinkedList from "dbly-linked-list";
+import deepcopy from "deepcopy";
 /**
  *
  * @param {Editor} editor
@@ -32,7 +33,6 @@ export const CRDTify = (editor, peerId, dataChannel) => {
     const keys = allKeys(localClock, remoteClock);
 
     for (let key of keys) {
-
       if (key === remoteClockId) continue;
       const localValue = localClock[key] || 0;
       const remoteValue = remoteClock[key] || 0;
@@ -212,33 +212,64 @@ export function bufferCRDTOperation(editor, op) {
   editor.crdtOpBuffer.push(op);
 }
 
-/**
- * 
- * @param {Editor} editor 
- * @param {CRDTOperation} crdtOp 
- */
-function executeDownstreamSingleCRDTOp(editor, crdtOp) {
-    const { type, index, insertAfterNodeId, node, paragraphPath, vectorClock: remoteVectorClock } = crdtOp
-    // merge remote with local vector clock, increment it
-    vc.merge(editor.vectorClock, remoteVectorClock)
-    vc.increment(editor.vectorClock, editor.peerId);
-    if (type === "insert_text") {
-      // Locate the paragraph and rga this node was inserted in
-      const [paragraphNode, path] = Editor.node(editor, paragraphPath);
-      /**@type {RGA} */
-      const rga = paragraphNode.rga;
-      if (insertAfterNodeId === '') {
-        // '' means insert after head
-        rga.list.insert(node)
-        rga.nodeMap.set(node.getId(), node)
-      }
-      else {
-        // Retreive reference node from the map
-        const insertAfterNode = rga.nodeMap.get(insertAfterNodeId)
-        
 
+
+/**
+ *
+ * @param {Editor} editor
+ * @param {CRDTOperation} crdtOp
+ */
+export function executeDownstreamSingleCRDTOp(editor, crdtOp) {
+  const {
+    type,
+    index,
+    insertAfterNodeId,
+    node,
+    paragraphPath,
+    vectorClock: remoteVectorClock,
+  } = crdtOp;
+  console.log({ node });
+  // merge remote with local vector clock, increment it
+  vc.merge(editor.vectorClock, remoteVectorClock);
+  vc.increment(editor.vectorClock, editor.peerId);
+  if (type === "insert_text") {
+    // Locate the paragraph and rga this node was inserted in
+    const [paragraphNode, path] = Editor.node(editor, paragraphPath);
+    /**@type {RGA} */
+    const rga = paragraphNode.rga;
+    console.log("inserting node to the current linked list");
+    if (insertAfterNodeId === "") {
+      // '' means insert after head
+      rga.list.insertFirst(node);
+      rga.chracterLinkedNodeMap.set(getIdForCharacterNode(node), rga.list.getHeadNode());
+    } else {
+      // Retreive reference node from the map
+      const insertAfterLinkedNode =
+        rga.chracterLinkedNodeMap.get(insertAfterNodeId);
+      const oldNextLinkedNode = insertAfterLinkedNode.next;
+      let current = oldNextLinkedNode;
+      console.log("The ref node's next: ", current)
+      while (current !== null && isLargerThanForCharacterNode(current.data, node)) {
+        // Look for the first sussessor node that is less
+        current = current.next;
       }
+      let insertedLinkedNode;
+      if (current === null) {
+        rga.list.insert(node);
+        insertedLinkedNode = rga.list.getTailNode();
+      } else {
+        const newLinkedNode = rga.list.createNewNode(node);
+        const oldPrev = current.prev;
+        oldPrev.next = newLinkedNode;
+        newLinkedNode.prev = oldPrev;
+        newLinkedNode.next = current;
+        current.prev = newLinkedNode;
+        insertedLinkedNode = newLinkedNode;
+      }
+      rga.chracterLinkedNodeMap.set(getIdForCharacterNode(node), insertedLinkedNode);
     }
+    console.log("node inserted, ", { rga });
+  }
 }
 
 /**
@@ -262,7 +293,7 @@ function executeUpstreamCRDTOps(editor, crdtOps) {
       /**@type {RGA} */
       const rga = paragraphNode.rga;
       // Look for the "insert after" node's id. If it is '', it means insert at the beginning
-      let insertedLinkedNode
+      let insertedLinkedNode;
       let insertAfterNode;
       // Insert to the end of the list as much as it can
       if (
@@ -272,7 +303,7 @@ function executeUpstreamCRDTOps(editor, crdtOps) {
         Node.string(paragraphNode).length === index + 1
       ) {
         rga.list.insert(node);
-        insertedLinkedNode = rga.list.getTailNode()
+        insertedLinkedNode = rga.list.getTailNode();
         insertAfterNode = rga.list.getTailNode().prev;
       } else {
         // traverse through visible nodes
@@ -280,11 +311,11 @@ function executeUpstreamCRDTOps(editor, crdtOps) {
         insertAfterNode = insertedLinkedNode.prev;
       }
       const insertAfterNodeId = insertAfterNode
-        ? insertAfterNode.data.getId()
+        ? getIdForCharacterNode(insertAfterNode.data)
         : "";
 
-      op.setinsertAfterNodeId(insertAfterNodeId);
-      rga.chracterLinkedNodeMap.set(node.getId(), insertedLinkedNode);
+      setInsertAfterNodeIdForCRDTOp(op, insertAfterNodeId);
+      rga.chracterLinkedNodeMap.set(getIdForCharacterNode(node), insertedLinkedNode);
     }
     if (type === "remove_text") {
       const [paragraphNode, path] = Editor.node(editor, op.paragraphPath);
@@ -359,7 +390,7 @@ function mapOperationsFromSlate(editor, slateOps) {
             actualOffset++,
             paragraphPath
           );
-          crdtOp.setDeletedNodeId(nodeToBeDeleted.data.getId());
+          setDeletedNodeIdForCRDTOp(crdtOp, getIdForCharacterNode(nodeToBeDeleted.data));
           crdtOps.push(crdtOp);
         });
       }
@@ -405,4 +436,36 @@ function allKeys(a, b) {
       last = item;
       return !isDuplicate;
     });
+}
+// CRDTOperation Helpers
+function setInsertAfterNodeIdForCRDTOp(crdtOp, insertAfterNodeId) {
+  if (crdtOp.type !== 'insert_text') {
+      throw Error("Wrong type of operation!")
+  }
+  crdtOp.insertAfterNodeId = insertAfterNodeId
+}
+function setDeletedNodeIdForCRDTOp(crdtOp, deletedNodeId) {
+  crdtOp.deletedNodeId = deletedNodeId
+}
+// CharacterNode Helpers
+function getIdForCharacterNode(chNode) {
+  // An id is sum of the vector clock + peerId
+  const {clock} = chNode.vectorClock
+  let sum = 0
+  Object.keys(clock).forEach(peerId => {
+      sum += clock[peerId]
+  })
+  return `${sum}-${chNode.peerId}`
+}
+
+/**
+* 
+* @param {CharacterNode} otherCharNode 
+*/
+function isLargerThanForCharacterNode(chNode, otherCharNode) {
+  const thisIdArray = getIdForCharacterNode(chNode).split('-')
+  const otherIdArray = getIdForCharacterNode(otherCharNode).split('-')
+  const isNumLarger = Number(thisIdArray[0]) > Number(otherIdArray[0])
+  const isStrLarger = thisIdArray[1] > otherIdArray[1]
+  return isNumLarger && isStrLarger
 }

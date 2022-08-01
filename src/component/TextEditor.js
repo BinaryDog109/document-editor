@@ -5,7 +5,6 @@ import { createEditor, Node } from "slate";
 
 import vc from "vectorclock";
 
-
 // Import the Slate components and React plugin.
 import { Slate, Editable, withReact } from "slate-react";
 
@@ -19,6 +18,7 @@ import { RoomPanel } from "./RoomPanel";
 import { WebRTCContextProvider } from "../context/WebRTCContext";
 import {
   CRDTify,
+  executeDownstreamSingleCRDTOp,
   findActualOffsetFromParagraphAt,
   findParagraphNodeEntryAt,
 } from "../crdt/JSONCRDT";
@@ -44,33 +44,30 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
   const handleMessageFromUpstream = (event) => {
     setCRDTSyncStatus("Received Ops");
     const crdtOp = JSON.parse(event.data);
-    console.log({crdtOp})
-    const { type, index, insertAfterNodeId, node, paragraphPath } = crdtOp
-    if (type === "insert_text") {
-      
-    }
+    // After json, original crdt object methods will be lost, so add them back
+    executeDownstreamSingleCRDTOp(editor, crdtOp);
   };
   const handleSendCRDTOperationJson = (e) => {
     const dataChannelMapKeys = Object.keys(dataChannelMap);
     if (!dataChannelMapKeys.length) return;
     try {
       setCRDTSyncStatus("Sending...");
-      
+
       dataChannelMapKeys.forEach((otherUserId) => {
         const dataChannel = dataChannelMap[otherUserId];
         const buffer = editor.crdtOpBuffer;
         while (buffer.length > 0) {
           const op = buffer.shift();
           // Increment and send the local vector clock every time we send an operation
-          vc.increment(editor.vectorClock, editor.peerId)
-          op.vectorClock = {...editor.vectorClock}
+          vc.increment(editor.vectorClock, editor.peerId);
+          op.vectorClock = { ...editor.vectorClock };
           dataChannel.send(JSON.stringify(op));
         }
       });
       console.log("crdt ops sent");
       setCRDTSyncStatus("Sent");
     } catch (error) {
-      setCRDTSyncStatus("Error in sending operation")
+      setCRDTSyncStatus("Error in sending operation");
       console.log("Error in handleSend: ", error);
     }
   };

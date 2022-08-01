@@ -8,8 +8,7 @@ import {
   toggleLinkNode,
 } from "../utility/EditorStyleUtils";
 import { useSlateStatic } from "slate-react";
-import { createEditor, Editor, Transforms } from "slate";
-import vc from "vectorclock"
+
 
 export const Toolbar = ({ selection }) => {
   const editor = useSlateStatic();
