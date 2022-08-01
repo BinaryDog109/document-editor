@@ -42,33 +42,38 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
     leftUser,
   } = useWebRTCContext();
 
-  const handleMessageFromUpstream = (event) => {
-    setCRDTSyncStatus("Received Ops");
-    const crdtOp = JSON.parse(event.data);
-    // After json, original crdt object methods will be lost, so add them back
-    executeDownstreamSingleCRDTOp(editor, crdtOp);
-    const slateOps = mapSingleOperationFromCRDT(editor, crdtOp)
-    slateOps.forEach(op => {
-      editor.apply(op)
-    })
-  };
+  const handleMessageFromUpstream = useCallback(
+    (event) => {
+      setCRDTSyncStatus("Received Ops");
+      const crdtOp = JSON.parse(event.data);
+      // After json, original crdt object methods will be lost, so add them back
+      executeDownstreamSingleCRDTOp(editor, crdtOp);
+      const slateOps = mapSingleOperationFromCRDT(editor, crdtOp);
+      slateOps.forEach((op) => {
+        editor.apply(op);
+      });
+    },
+    [editor]
+  );
   const handleSendCRDTOperationJson = (e) => {
     const dataChannelMapKeys = Object.keys(dataChannelMap);
     if (!dataChannelMapKeys.length) return;
     try {
       setCRDTSyncStatus("Sending...");
 
-      dataChannelMapKeys.forEach((otherUserId) => {
-        const dataChannel = dataChannelMap[otherUserId];
-        const buffer = editor.crdtOpBuffer;
-        while (buffer.length > 0) {
-          const op = buffer.shift();
-          // Increment and send the local vector clock every time we send an operation
-          vc.increment(editor.vectorClock, editor.peerId);
-          op.vectorClock = { ...editor.vectorClock };
+      const buffer = editor.crdtOpBuffer;
+      while (buffer.length > 0) {
+        const op = buffer.shift();
+        // Increment and send the local vector clock every time we send an operation
+        vc.increment(editor.vectorClock, editor.peerId);
+        op.vectorClock = { ...editor.vectorClock };
+        // Broadcast this operation
+        dataChannelMapKeys.forEach((otherUserId) => {
+          const dataChannel = dataChannelMap[otherUserId];
           dataChannel.send(JSON.stringify(op));
-        }
-      });
+        });
+      }
+
       console.log("crdt ops sent");
       setCRDTSyncStatus("Sent");
     } catch (error) {
@@ -115,7 +120,7 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
         }
       });
     }
-  }, [peerConnectionsMap, side]);
+  }, [peerConnectionsMap, side, handleMessageFromUpstream]);
   useEffect(() => {
     if (leftUser) {
       console.log(`In crdt data channel: user ${leftUser} has left`);
