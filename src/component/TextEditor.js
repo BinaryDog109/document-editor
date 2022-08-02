@@ -32,6 +32,8 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
   const [prevSelection, selection, setSelection] = useSelection(editor);
   const [dataChannelMap, setDataChannelMap] = useState({});
   const [CRDTSyncStatus, setCRDTSyncStatus] = useState("Not connected");
+  const [bufferModeActivated, setBufferModeActivated] = useState(true)
+
   const {
     socket,
     chatId,
@@ -88,6 +90,9 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
       CRDTify(editor, socket.id);
     });
   }, [socket, editor]);
+  useEffect(()=>{
+    editor.dataChannelMap = dataChannelMap
+  }, [editor, dataChannelMap])
   useEffect(() => {
     const peerConnectionsMapKeys = Object.keys(peerConnectionsMap);
     if (!side || !peerConnectionsMapKeys.length) {
@@ -169,8 +174,14 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
         <RoomPanel />
         <ChatBox />
         <div className="sync-panel">
-          <button onClick={handleSendCRDTOperationJson}>Sync</button>{" "}
+          {bufferModeActivated && <button onClick={handleSendCRDTOperationJson}>Sync</button>}{" "}
           <span>{CRDTSyncStatus}</span>
+        </div>
+        <div>
+          <button onClick={()=>{
+            setBufferModeActivated(prev=>!prev)
+            editor.unbuffered = !editor.unbuffered
+          }}>{bufferModeActivated? "Buffered": "Unbuffered"}</button>
         </div>
 
         <Editable

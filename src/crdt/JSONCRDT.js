@@ -15,8 +15,15 @@ import HLC from "../utility/HybridLogicalClock";
 import vc from "vectorclock";
 // import FastList from "fast-list";
 import LinkedList from "dbly-linked-list";
-import { overwriteInsertBreak, overwriteNormaliseNode, overwriteOnChange } from "./editor-overwrite-helpers";
-import { findTextPathFromActualOffsetOfParagraphPath, isLargerThanForCharacterNode } from "./utilities";
+import {
+  overwriteInsertBreak,
+  overwriteNormaliseNode,
+  overwriteOnChange,
+} from "./editor-overwrite-helpers";
+import {
+  findTextPathFromActualOffsetOfParagraphPath,
+  isLargerThanForCharacterNode,
+} from "./utilities";
 
 export class RGA {
   constructor() {
@@ -170,10 +177,7 @@ export class RGA {
         this.list.size++;
       }
     }
-    this.chracterLinkedNodeMap.set(
-      (node).id,
-      insertedLinkedNode
-    );
+    this.chracterLinkedNodeMap.set(node.id, insertedLinkedNode);
     // Append the updated visible index of this operation
     crdtOp.index = this.findVisibleIndexOf(insertedLinkedNode);
   }
@@ -191,11 +195,11 @@ export const CRDTify = (editor, peerId, dataChannel) => {
     enumerable: false,
     configurable: true,
   });
-  
+
   editor.peerId = peerId;
   editor.vectorClock = { clock: {} };
   // Setting rga & id to be '' for the initial paragraph. There should only be one paragraph with id ''
-  const initParagraphId = ''
+  const initParagraphId = "";
   Transforms.setNodes(
     editor,
     { rga: new RGA(), id: initParagraphId },
@@ -207,11 +211,10 @@ export const CRDTify = (editor, peerId, dataChannel) => {
   const [paragraph] = Editor.node(editor, [0]);
   editor.paragraphRGAMap.set(initParagraphId, paragraph.rga);
 
-  overwriteNormaliseNode(editor)
-  overwriteInsertBreak(editor)
-  overwriteOnChange(editor)
+  overwriteNormaliseNode(editor);
+  overwriteInsertBreak(editor);
+  overwriteOnChange(editor);
 };
-
 
 /**
  * Downstream handlers
@@ -239,18 +242,13 @@ export function executeDownstreamSingleCRDTOp(editor, crdtOp) {
     const [paragraphNode, path] = Editor.node(editor, paragraphPath);
     /**@type {RGA} */
     const rga = paragraphNode.rga;
-    console.log(
-      "Insertion crdtOp: ", {...crdtOp}
-    );
+    console.log("Insertion crdtOp: ", { ...crdtOp });
     if (insertAfterNodeId === "") {
       // '' means insert after head
       const head = rga.list.getHeadNode();
       if (!head) {
         rga.list.insertFirst(node);
-        rga.chracterLinkedNodeMap.set(
-          (node).id,
-          rga.list.getHeadNode()
-        );
+        rga.chracterLinkedNodeMap.set(node.id, rga.list.getHeadNode());
       } else {
         // If there is only one element, make '' to be the reference node
         rga.downStreamInsert(node, "", crdtOp);
@@ -261,25 +259,30 @@ export function executeDownstreamSingleCRDTOp(editor, crdtOp) {
         rga.chracterLinkedNodeMap.get(insertAfterNodeId);
       rga.downStreamInsert(node, insertAfterLinkedNode, crdtOp);
     }
-    console.log("Current list: ", {...rga.list})
+    console.log("Current list: ", { ...rga.list });
   } else if (type === "remove_text") {
-    console.log("deletion crdtOp: ", {...crdtOp})
+    console.log("deletion crdtOp: ", { ...crdtOp });
     const [paragraphNode, path] = Editor.node(editor, paragraphPath);
     /**@type {RGA} */
     const rga = paragraphNode.rga;
     const map = rga.chracterLinkedNodeMap;
-    // Before deletion, update its visible ID so that slate operation can locate it correctly
-    crdtOp.index = rga.findVisibleIndexOf(map.get(crdtOp.deletedNodeId));
-    map.get(crdtOp.deletedNodeId).data.isTombStoned = true;
-    rga.list.tombStoneCount++;
-    console.log("Current list: ", {...rga.list})
-  }
-  else if (type === "insert_paragraph") {
-    const id = node.id
+    const deleteNode = map.get(crdtOp.deletedNodeId);
+    // If before the remote changes, the user has already deleted it
+    if (deleteNode.data.isTombStoned) {
+      crdtOp.alreadyDeleted = true;
+    } else {
+      // Before deletion, update its visible ID so that slate operation can locate it correctly
+      crdtOp.index = rga.findVisibleIndexOf(deleteNode);
+      deleteNode.data.isTombStoned = true;
+      rga.list.tombStoneCount++;
+    }
+    console.log("Current list: ", { ...rga.list });
+  } else if (type === "insert_paragraph") {
+    const id = node.id;
     // After JSON.stringify, we need to re-assign RGA to the paragraph node
-    node.rga = new RGA()
-    editor.paragraphRGAMap.set(id, node.rga)
-    console.log("paragraph inserted to map")
+    node.rga = new RGA();
+    editor.paragraphRGAMap.set(id, node.rga);
+    console.log("paragraph inserted to map");
   }
   return crdtOp;
 }
@@ -294,8 +297,8 @@ export function mapSingleOperationFromCRDT(editor, crdtOp) {
     slateTargetPath,
     vectorClock: remoteVectorClock,
   } = crdtOp;
-  console.log("Here is the crdtOp I received, ", {...crdtOp})
-  
+  console.log("Here is the crdtOp I received, ", { ...crdtOp });
+
   const slateOps = [];
   if (type === "insert_text") {
     const [_, actualTextOffset] = findTextPathFromActualOffsetOfParagraphPath(
@@ -332,6 +335,7 @@ export function mapSingleOperationFromCRDT(editor, crdtOp) {
       slateOps.push(slateOp);
     }
   } else if (type === "remove_text") {
+    if (crdtOp.alreadyDeleted) { return slateOps }
     const [_, actualTextOffset] = findTextPathFromActualOffsetOfParagraphPath(
       editor,
       paragraphPath,
@@ -350,26 +354,19 @@ export function mapSingleOperationFromCRDT(editor, crdtOp) {
       };
       slateOps.push(slateOp);
     }
-  }
-  else if (type === "insert_paragraph") {
-    let insertPath = [...slateTargetPath]
+  } else if (type === "insert_paragraph") {
+    let insertPath = [...slateTargetPath];
     while (Path.hasPrevious(insertPath)) {
       insertPath = Path.previous(insertPath);
     }
-      
-      const slateOp = {
-        node: node,
-        path: slateTargetPath,
-        type: "insert_node",
-        isRemote: true,
-      };
-      slateOps.push(slateOp);
-    
+
+    const slateOp = {
+      node: node,
+      path: slateTargetPath,
+      type: "insert_node",
+      isRemote: true,
+    };
+    slateOps.push(slateOp);
   }
   return slateOps;
 }
-
-
-
-
-
