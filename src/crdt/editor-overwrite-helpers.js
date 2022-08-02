@@ -1,5 +1,5 @@
 import cuid from "cuid";
-import { Editor, Transforms } from "slate";
+import { Editor, Element, Transforms } from "slate";
 import { RGA } from "./JSONCRDT";
 import { bufferCRDTOperation, executeUpstreamCRDTOps, mapOperationsFromSlate } from "./upstream-slate-helpers";
 

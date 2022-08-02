@@ -274,6 +274,13 @@ export function executeDownstreamSingleCRDTOp(editor, crdtOp) {
     rga.list.tombStoneCount++;
     console.log("Current list: ", {...rga.list})
   }
+  else if (type === "insert_paragraph") {
+    const id = node.id
+    // After JSON.stringify, we need to re-assign RGA to the paragraph node
+    node.rga = new RGA()
+    editor.paragraphRGAMap.set(id, node.rga)
+    console.log("paragraph inserted to map")
+  }
   return crdtOp;
 }
 
@@ -288,13 +295,14 @@ export function mapSingleOperationFromCRDT(editor, crdtOp) {
     vectorClock: remoteVectorClock,
   } = crdtOp;
   console.log("Here is the crdtOp I received, ", {...crdtOp})
-  const [_, actualTextOffset] = findTextPathFromActualOffsetOfParagraphPath(
-    editor,
-    paragraphPath,
-    index
-  );
+  
   const slateOps = [];
   if (type === "insert_text") {
+    const [_, actualTextOffset] = findTextPathFromActualOffsetOfParagraphPath(
+      editor,
+      paragraphPath,
+      index
+    );
     let textPath = [...slateTargetPath];
     // If this text node hasnt been deleted beforehand
     if (Editor.node(editor, textPath)) {
@@ -324,6 +332,11 @@ export function mapSingleOperationFromCRDT(editor, crdtOp) {
       slateOps.push(slateOp);
     }
   } else if (type === "remove_text") {
+    const [_, actualTextOffset] = findTextPathFromActualOffsetOfParagraphPath(
+      editor,
+      paragraphPath,
+      index
+    );
     let textPath = [...slateTargetPath];
     const textOffset = actualTextOffset;
     // Only deletes it when it exists
@@ -337,6 +350,21 @@ export function mapSingleOperationFromCRDT(editor, crdtOp) {
       };
       slateOps.push(slateOp);
     }
+  }
+  else if (type === "insert_paragraph") {
+    let insertPath = [...slateTargetPath]
+    while (Path.hasPrevious(insertPath)) {
+      insertPath = Path.previous(insertPath);
+    }
+      
+      const slateOp = {
+        node: node,
+        path: slateTargetPath,
+        type: "insert_node",
+        isRemote: true,
+      };
+      slateOps.push(slateOp);
+    
   }
   return slateOps;
 }

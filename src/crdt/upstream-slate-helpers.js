@@ -69,6 +69,9 @@ export function bufferCRDTOperation(editor, op) {
         map.get(op.deletedNodeId).data.isTombStoned = true;
         rga.list.tombStoneCount++;
       }
+      if (type === "insert_paragraph") {
+        console.log("upstream paragraph created")
+      }
     });
     return crdtOps;
   }
@@ -155,11 +158,16 @@ export function bufferCRDTOperation(editor, op) {
          type: "insert_node"
        */
       if (slateOp.type === "insert_node" && slateOp.node.type === "paragraph") {
+        
         const paragraph = slateOp.node;
         // handle inserting a new paragraph (insert break)
-        if (Object.keys(paragraph.rga) !== 0) return;
+        if (Object.keys(paragraph.rga).length !== 0) return;
+        
         const crdtOp = new CRDTOperation(slateOp.type);
-        crdtOp.nodeToBeInserted = paragraph;
+        crdtOp.node = paragraph;
+        crdtOp.slateTargetPath = [...slateOp.path]
+        crdtOp.type = "insert_paragraph"
+
         crdtOps.push(crdtOp);
       }
     }
