@@ -108,6 +108,7 @@ export function bufferCRDTOperation(editor, op) {
           editor,
           slatePath
         );
+        // slateOp.offset is relative to that text node, so we need to find the actual index relative to the paragraph
         let actualOffset = findActualOffsetFromParagraphAt(editor, {
           path: slatePath,
           offset: slateOp.offset,
