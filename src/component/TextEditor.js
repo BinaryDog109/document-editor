@@ -66,7 +66,8 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
         const op = buffer.shift();
         // Increment and send the local vector clock every time we send an operation
         vc.increment(editor.vectorClock, editor.peerId);
-        op.vectorClock = { ...editor.vectorClock };
+        op.vectorClock = {}
+        op.vectorClock.clock = { ...editor.vectorClock.clock };
         // Broadcast this operation
         dataChannelMapKeys.forEach((otherUserId) => {
           const dataChannel = dataChannelMap[otherUserId];

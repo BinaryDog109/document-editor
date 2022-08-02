@@ -9,7 +9,11 @@ import {
 } from "../utility/EditorStyleUtils";
 import { useSlateStatic } from "slate-react";
 import { Editor, Path, Transforms } from "slate";
-import { findActualOffsetFromParagraphAt, findTextPathFromActualOffsetOfParagraphPath } from "../crdt/JSONCRDT";
+import {
+  findActualOffsetFromParagraphAt,
+  findTextPathFromActualOffsetOfParagraphPath,
+  RGA,
+} from "../crdt/JSONCRDT";
 
 export const Toolbar = ({ selection }) => {
   const editor = useSlateStatic();
@@ -31,16 +35,14 @@ export const Toolbar = ({ selection }) => {
     <div className={styles.toolbar}>
       <button
         onMouseDown={() => {
-          // editor.apply({
-          //   node: { text: "Y" },
-          //   path: [0, 1],
-          //   type: "insert_node",
-          //   isRemote: false
-          // });
+          editor.apply({
+            node: { children: [{text: ''}], type: "paragraph", rga: new RGA() },
+            path: [2],
+            type: "insert_node",
+          });
           try {
-            const [textPath, offset] = findTextPathFromActualOffsetOfParagraphPath(editor, [0], 7)
-            console.log({textPath, offset})
-
+            // const [textPath, offset] = findTextPathFromActualOffsetOfParagraphPath(editor, [0], 7)
+            // console.log({textPath, offset})
             // Path.previous just decrease a num
             // console.log(Path.previous([1]))
             // console.log(Editor.node(editor, [0,0]))
