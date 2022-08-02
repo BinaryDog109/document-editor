@@ -23,6 +23,7 @@ import {
 import {
   findTextPathFromActualOffsetOfParagraphPath,
   isLargerThanForCharacterNode,
+  setCharacterId,
 } from "./utilities";
 
 export class RGA {
@@ -234,10 +235,14 @@ export function executeDownstreamSingleCRDTOp(editor, crdtOp) {
     paragraphPath,
     vectorClock: remoteVectorClock,
   } = crdtOp;
+  
   // merge remote with local vector clock, increment it
-  vc.merge(editor.vectorClock, remoteVectorClock);
+  editor.vectorClock = vc.merge(editor.vectorClock, remoteVectorClock);
   vc.increment(editor.vectorClock, editor.peerId);
+  console.log("Vector clocks: ", {...editor.vectorClock.clock}, {...remoteVectorClock.clock})
   if (type === "insert_text") {
+    // For upcoming inserting nodes, update their character id
+    // setCharacterId(node, editor)
     // Locate the paragraph and rga this node was inserted in
     const [paragraphNode, path] = Editor.node(editor, paragraphPath);
     /**@type {RGA} */

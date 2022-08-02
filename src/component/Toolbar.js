@@ -60,7 +60,7 @@ export const Toolbar = ({ selection }) => {
           }
         }}
       >
-        Click
+        Test Button
       </button>
       <button
         title="Bold"
