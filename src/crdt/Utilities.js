@@ -13,7 +13,7 @@ function allKeys(a, b) {
       return !isDuplicate;
     });
 }
-
+ 
 // The algorithm that ensure one clock is causally ready when sending to the other.
 const isCausallyReady = (localClock, remoteClock, remoteClockId) => {
   // allow this function to be called with objects that contain clocks, or the clocks themselves
