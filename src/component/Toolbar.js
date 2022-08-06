@@ -14,6 +14,11 @@ import {
   findTextPathFromActualOffsetOfParagraphPath,
   RGA,
 } from "../crdt/JSONCRDT";
+import {
+  simplifiedCausallyOrder,
+  testCausallyOrder,
+} from "../crdt/causal-order-helpers";
+import PriorityQueue from "priorityqueuejs";
 
 export const Toolbar = ({ selection }) => {
   const editor = useSlateStatic();
@@ -35,12 +40,14 @@ export const Toolbar = ({ selection }) => {
     <div className={styles.toolbar}>
       <button
         onMouseDown={() => {
-          editor.apply({
-            node: { children: [{text: ''}], type: "paragraph", rga: new RGA() },
-            path: [2],
-            type: "insert_node",
-          });
+          // editor.apply({
+          //   node: { children: [{text: ''}], type: "paragraph", rga: new RGA() },
+          //   path: [2],
+          //   type: "insert_node",
+          // });
           try {
+            testCausallyOrder();
+
             // const [textPath, offset] = findTextPathFromActualOffsetOfParagraphPath(editor, [0], 7)
             // console.log({textPath, offset})
             // Path.previous just decrease a num
@@ -56,7 +63,6 @@ export const Toolbar = ({ selection }) => {
             // });
           } catch (error) {
             console.log(error.message);
-            console.log("no text node here!");
           }
         }}
       >

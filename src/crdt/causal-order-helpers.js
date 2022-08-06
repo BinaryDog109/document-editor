@@ -50,3 +50,88 @@ export function executeCausallyRemoteOperation(editor, remoteCRDTOp, queue) {
     }
   }
 }
+// Below functions are for testing
+export function simplifiedCausallyOrder(
+  localObject,
+  remoteOperaton,
+  queue
+) {
+  if (
+    !isCausallyReady(
+      localObject.vectorClock,
+      remoteOperaton.vectorClock,
+      remoteOperaton.peerId
+    )
+  ) {
+    console.log("Received non-ready operation", remoteOperaton);
+    queue.enq(remoteOperaton);
+  } else {
+    console.log("Exuceting ", remoteOperaton);
+    localObject.vectorClock = vc.merge(localObject.vectorClock, remoteOperaton.vectorClock);
+    vc.increment(localObject.vectorClock, localObject.peerId);
+    
+    while (
+      !queue.isEmpty() &&
+      isCausallyReady(
+        localObject.vectorClock,
+        queue.peek().vectorClock,
+        queue.peek().peerId
+      )
+    ) {
+      const nextOp = queue.deq();
+      console.log("Exuceting from queue ", nextOp);
+      localObject.vectorClock = vc.merge(localObject.vectorClock, nextOp.vectorClock);
+      vc.increment(localObject.vectorClock, localObject.peerId);
+      console.log("At this step: ", localObject.vectorClock)
+    }
+  }
+}
+export function testCausallyOrder() {
+  console.log("Start testing");
+  const localObject = { peerId: "c", vectorClock: { clock: {c:1} } };
+  const queue = new PriorityQueue((opA, opB) => {
+    return vc.descSort(opA.vectorClock, opB.vectorClock);
+  });
+  
+  simplifiedCausallyOrder(
+    localObject,
+    {
+      peerId: "a",
+      vectorClock: { clock: { a: 5, b: 2, c: 1 } },
+    },
+    queue
+  );
+  simplifiedCausallyOrder(
+    localObject,
+    {
+      peerId: "b",
+      vectorClock: { clock: { a: 1, b: 2, c: 0 } },
+    },
+    queue
+  );
+  simplifiedCausallyOrder(
+    localObject,
+    {
+      peerId: "a",
+      vectorClock: { clock: { a: 3, b: 2, c: 0 } },
+    },
+    queue
+  );
+  simplifiedCausallyOrder(
+    localObject,
+    {
+      peerId: "b",
+      vectorClock: { clock: { a: 3, b: 5, c: 1 } },
+    },
+    queue
+  );
+  simplifiedCausallyOrder(
+    localObject,
+    {
+      peerId: "a",
+      vectorClock: { clock: { a: 1, b: 0, c: 0 } },
+    },
+    queue
+  );
+  console.log("After: ", localObject.vectorClock);
+}
