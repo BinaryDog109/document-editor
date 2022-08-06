@@ -1,5 +1,6 @@
 import isUrl from "is-url";
 import { Editor, Element, Point, Range, Text, Transforms } from "slate";
+import { isOneOfParagraphTypes } from "../crdt/utilities";
 
 // Leaf styles
 export const getActiveStyles = (editor) => {
@@ -61,7 +62,7 @@ export const setTopLevelBlockStyles = (editor, type) => {
     {
       at: editor.selection,
       mode: "highest",
-      match: (n) => Editor.isBlock(editor, n),
+      match: (n) => Editor.isBlock(editor, n) && isOneOfParagraphTypes(n),
     }
   );
 };

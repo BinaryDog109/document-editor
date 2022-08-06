@@ -7,6 +7,7 @@ import {
   executeUpstreamCRDTOps,
   mapOperationsFromSlate,
 } from "./upstream-slate-helpers";
+import { isOneOfParagraphTypes } from "./utilities";
 
 export function overwriteNormaliseNode(editor) {
   const { normalizeNode } = editor;
@@ -22,16 +23,16 @@ export function overwriteInsertBreak(editor) {
   editor.insertBreak = () => {
     const { selection } = editor;
     if (selection) {
-      const [nodes] = Editor.nodes(editor, {
+      const [nodeEntry] = Editor.nodes(editor, {
         match: (n) =>
-          !Editor.isEditor(n) && Element.isElement(n) && n.type === "paragraph",
+          !Editor.isEditor(n) && Element.isElement(n) && isOneOfParagraphTypes(n),
       });
-
-      if (nodes) {
+      // console.log({nodeEntry})
+      if (nodeEntry) {
         const id = cuid();
         const newParagraph = {
           children: [{ text: "" }],
-          type: "paragraph",
+          type: nodeEntry[0].type,
           id,
           rga: new RGA(),
         };

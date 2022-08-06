@@ -40,27 +40,14 @@ export const Toolbar = ({ selection }) => {
     <div className={styles.toolbar}>
       <button
         onMouseDown={() => {
-          // editor.apply({
-          //   node: { children: [{text: ''}], type: "paragraph", rga: new RGA() },
-          //   path: [2],
-          //   type: "insert_node",
-          // });
           try {
-            testCausallyOrder();
-
-            // const [textPath, offset] = findTextPathFromActualOffsetOfParagraphPath(editor, [0], 7)
-            // console.log({textPath, offset})
-            // Path.previous just decrease a num
-            // console.log(Path.previous([1]))
-            // console.log(Editor.node(editor, [0,0]))
-            // editor.apply({
-            //   // No problem when offset is very big
-            //   offset: 200,
-            //   path: [0, 0],
-            //   text: "a",
-            //   type: "remove_text",
-            //   isRemote: true
-            // });
+            const op = {
+              newProperties: { type: "h1" },
+              path: [0],
+              // properties: { type: "paragraph" },
+              type: "set_node",
+            };
+            editor.apply(op);
           } catch (error) {
             console.log(error.message);
           }
