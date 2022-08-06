@@ -1,8 +1,9 @@
 import { Editor, Node, Range } from "slate";
 import { CharacterNode } from "./CharacterNode";
 import { CRDTOperation } from "./CRDTOperation";
-import { findActualOffsetFromParagraphAt, findParagraphNodeEntryAt, setCharacterId } from "./utilities";
+import { findActualOffsetFromParagraphAt, findParagraphNodeEntryAt, isOneOfParagraphTypes, setCharacterId } from "./utilities";
 import vc from "vectorclock";
+import HLC from "../utility/HybridLogicalClock";
 
 export function bufferCRDTOperation(editor, op) {
     if (!editor.crdtOpBuffer) editor.crdtOpBuffer = [];
@@ -20,7 +21,7 @@ export function bufferCRDTOperation(editor, op) {
       const type = op.type;
       const index = op.index;
   
-      // increase local vector clock and assign it for every op
+      // increase local vector clock
       vc.increment(editor.vectorClock, editor.peerId);
       
       if (type === "insert_text") {
@@ -71,6 +72,13 @@ export function bufferCRDTOperation(editor, op) {
       }
       if (type === "insert_paragraph") {
         console.log("upstream paragraph created")
+      }
+      if (type === "change_paragraph_type") {
+        // Increment HLC clock and assign it to the operation
+        editor.paragraphHLC = HLC.increment(editor.paragraphHLC, performance.now())
+        op.paragraphHLC = editor.paragraphHLC
+        op.peerId = editor.peerId
+        console.log("Changed paragraph type to: ", op.newParagraphType)
       }
     });
     return crdtOps;
@@ -172,6 +180,20 @@ export function bufferCRDTOperation(editor, op) {
         crdtOp.type = "insert_paragraph"
         crdtOp.peerId = editor.peerId
 
+        crdtOps.push(crdtOp);
+      }
+      /**
+       * newProperties: {type: 'h1'}
+         path: [0]
+         properties: {type: 'paragraph'}
+         type: "set_node"
+       */
+      if (slateOp.type === "set_node" && isOneOfParagraphTypes(slateOp.newProperties)) {
+        const {newProperties, path} = slateOp
+        const crdtOp = new CRDTOperation(slateOp.type);
+        crdtOp.newParagraphType = newProperties.type
+        crdtOp.paragraphPath = path
+        crdtOp.type = "change_paragraph_type"
         crdtOps.push(crdtOp);
       }
     }

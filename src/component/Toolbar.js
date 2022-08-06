@@ -8,17 +8,6 @@ import {
   toggleLinkNode,
 } from "../utility/EditorStyleUtils";
 import { useSlateStatic } from "slate-react";
-import { Editor, Path, Transforms } from "slate";
-import {
-  findActualOffsetFromParagraphAt,
-  findTextPathFromActualOffsetOfParagraphPath,
-  RGA,
-} from "../crdt/JSONCRDT";
-import {
-  simplifiedCausallyOrder,
-  testCausallyOrder,
-} from "../crdt/causal-order-helpers";
-import PriorityQueue from "priorityqueuejs";
 
 export const Toolbar = ({ selection }) => {
   const editor = useSlateStatic();
@@ -42,12 +31,18 @@ export const Toolbar = ({ selection }) => {
         onMouseDown={() => {
           try {
             const op = {
-              newProperties: { type: "h1" },
-              path: [0],
-              // properties: { type: "paragraph" },
-              type: "set_node",
+              type: "merge_node",
+              path: [1],
+              position: 1,
+            };
+            const op2 = {
+              path: [0, 1],
+              position: 1,
+              properties: {},
+              type: "merge_node",
             };
             editor.apply(op);
+            editor.apply(op2);
           } catch (error) {
             console.log(error.message);
           }

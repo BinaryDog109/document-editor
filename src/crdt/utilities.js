@@ -27,9 +27,10 @@ export const isCausallyReady = (localClock, remoteClock, remoteClockId) => {
     if (key === remoteClockId) continue;
     const localValue = localClock[key] || 0;
     const remoteValue = remoteClock[key] || 0;
-
+    console.log({remoteValue, localValue, key, remoteClockId})
     if (remoteValue > localValue) return false;
   }
+  
   if (remoteClockOwnValue > localClockRecordedRemoteClockValue) return true;
   else return false;
 };

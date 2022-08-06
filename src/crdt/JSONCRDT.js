@@ -190,7 +190,7 @@ export class RGA {
  * @param {Editor} editor
  */
 export const CRDTify = (editor, peerId, dataChannel) => {
-  initCausalOrderQueueForEditor(editor)
+  initCausalOrderQueueForEditor(editor);
   // Every peer keeps a map for paragraphs
   Object.defineProperty(editor, "paragraphRGAMap", {
     value: new Map(),
@@ -199,6 +199,8 @@ export const CRDTify = (editor, peerId, dataChannel) => {
     configurable: true,
   });
 
+  // Initialise HLC clock
+  editor.paragraphHLC = HLC.init(editor.peerId, performance.now());
   editor.peerId = peerId;
   editor.vectorClock = { clock: {} };
   // Setting rga & id to be '' for the initial paragraph. There should only be one paragraph with id ''
@@ -237,11 +239,10 @@ export function executeDownstreamSingleCRDTOp(editor, crdtOp) {
     paragraphPath,
     vectorClock: remoteVectorClock,
   } = crdtOp;
-  
+
   // merge remote with local vector clock, increment it
   editor.vectorClock = vc.merge(editor.vectorClock, remoteVectorClock);
   vc.increment(editor.vectorClock, editor.peerId);
-  console.log("Vector clocks: ", {...editor.vectorClock.clock}, {...remoteVectorClock.clock})
   if (type === "insert_text") {
     // For upcoming inserting nodes, update their character id
     // setCharacterId(node, editor)
@@ -249,7 +250,7 @@ export function executeDownstreamSingleCRDTOp(editor, crdtOp) {
     const [paragraphNode, path] = Editor.node(editor, paragraphPath);
     /**@type {RGA} */
     const rga = paragraphNode.rga;
-    console.log("Insertion crdtOp: ", { ...crdtOp });
+    // console.log("Insertion crdtOp: ", { ...crdtOp });
     if (insertAfterNodeId === "") {
       // '' means insert after head
       const head = rga.list.getHeadNode();
@@ -266,9 +267,8 @@ export function executeDownstreamSingleCRDTOp(editor, crdtOp) {
         rga.chracterLinkedNodeMap.get(insertAfterNodeId);
       rga.downStreamInsert(node, insertAfterLinkedNode, crdtOp);
     }
-    console.log("Current list: ", { ...rga.list });
   } else if (type === "remove_text") {
-    console.log("deletion crdtOp: ", { ...crdtOp });
+    // console.log("deletion crdtOp: ", { ...crdtOp });
     const [paragraphNode, path] = Editor.node(editor, paragraphPath);
     /**@type {RGA} */
     const rga = paragraphNode.rga;
@@ -289,7 +289,20 @@ export function executeDownstreamSingleCRDTOp(editor, crdtOp) {
     // After JSON.stringify, we need to re-assign RGA to the paragraph node
     node.rga = new RGA();
     editor.paragraphRGAMap.set(id, node.rga);
-    console.log("paragraph inserted to map");
+    // console.log("paragraph inserted to map");
+  } else if (type === "change_paragraph_type") {
+    const { paragraphHLC } = crdtOp;
+
+    // If remote has larger HLC, accept the remote change
+    if (HLC.compare(paragraphHLC, editor.paragraphHLC) > 0) {
+      crdtOp.acceptChange = true;
+    }
+    // Merge and update current HLC
+    editor.paragraphHLC = HLC.receive(
+      editor.paragraphHLC,
+      paragraphHLC,
+      performance.now()
+    );
   }
   return crdtOp;
 }
@@ -342,7 +355,9 @@ export function mapSingleOperationFromCRDT(editor, crdtOp) {
       slateOps.push(slateOp);
     }
   } else if (type === "remove_text") {
-    if (crdtOp.alreadyDeleted) { return slateOps }
+    if (crdtOp.alreadyDeleted) {
+      return slateOps;
+    }
     const [_, actualTextOffset] = findTextPathFromActualOffsetOfParagraphPath(
       editor,
       paragraphPath,
@@ -371,6 +386,18 @@ export function mapSingleOperationFromCRDT(editor, crdtOp) {
       node: node,
       path: slateTargetPath,
       type: "insert_node",
+      isRemote: true,
+    };
+    slateOps.push(slateOp);
+  } else if (type === "change_paragraph_type") {
+    const { newParagraphType } = crdtOp;
+    if (!crdtOp.acceptChange) {
+      return slateOps
+    }
+    const slateOp = {
+      path: paragraphPath,
+      newProperties: { type: newParagraphType },
+      type: "set_node",
       isRemote: true,
     };
     slateOps.push(slateOp);

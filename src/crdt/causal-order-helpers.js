@@ -25,7 +25,7 @@ export function executeCausallyRemoteOperation(editor, remoteCRDTOp, queue) {
       remoteCRDTOp.peerId
     )
   ) {
-    console.log("Received non-ready operation", remoteCRDTOp);
+    console.log("Received non-ready operation", remoteCRDTOp.vectorClock, editor.vectorClock);
     queue.enq(remoteCRDTOp);
   } else {
     executeDownstreamSingleCRDTOp(editor, remoteCRDTOp);
