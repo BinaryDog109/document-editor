@@ -122,7 +122,8 @@ export function bufferCRDTOperation(editor, op) {
               characterNode,
               actualOffset++,
               paragraphPath,
-              slatePath
+              slatePath,
+              editor.peerId
             );
             crdtOps.push(crdtOp);
           });
@@ -143,7 +144,8 @@ export function bufferCRDTOperation(editor, op) {
               nodeToBeDeleted.data,
               actualOffset++,
               paragraphPath,
-              slatePath
+              slatePath,
+              editor.peerId
             );
             setDeletedNodeIdForCRDTOp(
               crdtOp,
@@ -168,6 +170,7 @@ export function bufferCRDTOperation(editor, op) {
         crdtOp.node = paragraph;
         crdtOp.slateTargetPath = [...slateOp.path]
         crdtOp.type = "insert_paragraph"
+        crdtOp.peerId = editor.peerId
 
         crdtOps.push(crdtOp);
       }

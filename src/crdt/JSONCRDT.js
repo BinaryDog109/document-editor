@@ -25,6 +25,7 @@ import {
   isLargerThanForCharacterNode,
   setCharacterId,
 } from "./utilities";
+import { initCausalOrderQueueForEditor } from "./causal-order-helpers";
 
 export class RGA {
   constructor() {
@@ -189,6 +190,7 @@ export class RGA {
  * @param {Editor} editor
  */
 export const CRDTify = (editor, peerId, dataChannel) => {
+  initCausalOrderQueueForEditor(editor)
   // Every peer keeps a map for paragraphs
   Object.defineProperty(editor, "paragraphRGAMap", {
     value: new Map(),

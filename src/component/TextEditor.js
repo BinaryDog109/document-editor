@@ -24,6 +24,7 @@ import {
   mapSingleOperationFromCRDT,
 } from "../crdt/JSONCRDT";
 import { useWebRTCContext } from "../hooks/useWebRTCContext";
+import { executeCausallyRemoteOperation } from "../crdt/causal-order-helpers";
 
 export const TextEditor = ({ document, onChange, editorRef }) => {
   // const editor = useMemo(() => withReact(createEditor()), []);
@@ -48,12 +49,7 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
     (event) => {
       setCRDTSyncStatus("Received Ops");
       const crdtOp = JSON.parse(event.data);
-      // After json, original crdt object methods will be lost, so add them back
-      executeDownstreamSingleCRDTOp(editor, crdtOp);
-      const slateOps = mapSingleOperationFromCRDT(editor, crdtOp);
-      slateOps.forEach((op) => {
-        editor.apply(op);
-      });
+      executeCausallyRemoteOperation(editor, crdtOp, editor.causalOrderQueue)           
     },
     [editor]
   );

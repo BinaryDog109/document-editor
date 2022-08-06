@@ -1,7 +1,7 @@
 import { Editor, Node, Path } from "slate";
 
 // Helper function that helps generate all unique keys from two clocks
-function allKeys(a, b) {
+export function allKeys(a, b) {
   var last = null;
   return Object.keys(a)
     .concat(Object.keys(b))
@@ -15,7 +15,7 @@ function allKeys(a, b) {
 }
  
 // The algorithm that ensure one clock is causally ready when sending to the other.
-const isCausallyReady = (localClock, remoteClock, remoteClockId) => {
+export const isCausallyReady = (localClock, remoteClock, remoteClockId) => {
   // allow this function to be called with objects that contain clocks, or the clocks themselves
   if (localClock.clock) localClock = localClock.clock;
   if (remoteClock.clock) remoteClock = remoteClock.clock;
@@ -30,7 +30,7 @@ const isCausallyReady = (localClock, remoteClock, remoteClockId) => {
 
     if (remoteValue > localValue) return false;
   }
-  if (remoteClockOwnValue - localClockRecordedRemoteClockValue <= 2)
+  if (remoteClockOwnValue > localClockRecordedRemoteClockValue)
     return true;
   else return false;
 };
