@@ -8,6 +8,8 @@ import {
   toggleLinkNode,
 } from "../utility/EditorStyleUtils";
 import { useSlateStatic } from "slate-react";
+import { Editor } from "slate";
+import { isOneOfParagraphTypes } from "../crdt/utilities";
 
 export const Toolbar = ({ selection }) => {
   const editor = useSlateStatic();
@@ -30,19 +32,25 @@ export const Toolbar = ({ selection }) => {
       <button
         onMouseDown={() => {
           try {
-            const op = {
-              type: "merge_node",
-              path: [1],
-              position: 1,
-            };
-            const op2 = {
-              path: [1],
-              position: 1,
-              properties: {},
-              type: "merge_node",
-            };
-            editor.apply(op);
+            // const op = {
+            //   type: "merge_node",
+            //   path: [1],
+            //   position: 1,
+            // };
+            // const op2 = {
+            //   path: [1],
+            //   position: 1,
+            //   properties: {},
+            //   type: "merge_node",
+            // };
+            // editor.apply(op);
             // editor.apply(op2);
+            const [node] = Editor.nodes(editor, {
+              match: n => isOneOfParagraphTypes(n) && n.id==='',
+              mode: 'highest',
+              at: []
+            })
+            console.log(node)
           } catch (error) {
             console.log(error.message);
           }

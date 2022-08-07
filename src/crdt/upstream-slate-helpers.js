@@ -116,6 +116,7 @@ export function bufferCRDTOperation(editor, op) {
           editor,
           slatePath
         );
+        const paragraphId = paragraph.id
         // slateOp.offset is relative to that text node, so we need to find the actual index relative to the paragraph
         let actualOffset = findActualOffsetFromParagraphAt(editor, {
           path: slatePath,
@@ -133,6 +134,7 @@ export function bufferCRDTOperation(editor, op) {
               slatePath,
               editor.peerId
             );
+            crdtOp.paragraphId = paragraphId
             crdtOps.push(crdtOp);
           });
         } else if (slateOp.type === "remove_text") {
@@ -155,6 +157,7 @@ export function bufferCRDTOperation(editor, op) {
               slatePath,
               editor.peerId
             );
+            crdtOp.paragraphId = paragraphId
             setDeletedNodeIdForCRDTOp(
               crdtOp,
               (nodeToBeDeleted.data).id
@@ -192,11 +195,14 @@ export function bufferCRDTOperation(editor, op) {
          type: "set_node"
        */
       if (slateOp.type === "set_node" && isOneOfParagraphTypes(slateOp.newProperties)) {
+        const slatePath = [...slateOp.path];
+        const [paragraph, paragraphPath] = Editor.node(editor, slatePath)
         const {newProperties, path} = slateOp
         const crdtOp = new CRDTOperation(slateOp.type);
         crdtOp.newParagraphType = newProperties.type
         crdtOp.paragraphPath = path
         crdtOp.type = "change_paragraph_type"
+        crdtOp.paragraphId = paragraph.id
         crdtOps.push(crdtOp);
       }
     }

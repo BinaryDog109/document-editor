@@ -80,6 +80,17 @@ export function isLargerThanForCharacterNode(chNode, otherCharNode) {
   );
 }
 
+export function findParagraphEntryFromId(editor, paragraphId) {
+  console.log("Searching paragraph ", paragraphId)
+  const [nodeEntry] = Editor.nodes(editor, {
+    match: n => isOneOfParagraphTypes(n) && n.id === paragraphId,
+    mode: 'highest',
+    at: []
+  })
+  
+  return nodeEntry
+}
+
 export function findTextPathFromActualOffsetOfParagraphPath(
   editor,
   paragraphPath,
@@ -125,6 +136,7 @@ export const findParagraphIdAt = (editor, paragraphId, path) => {
 }
 
 export const findParagraphNodeEntryAt = (editor, path) => {
+  
   const entry = Editor.above(editor, {
     match: (n) => isOneOfParagraphTypes(n),
     at: path,

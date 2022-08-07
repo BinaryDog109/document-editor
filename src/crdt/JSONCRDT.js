@@ -21,8 +21,10 @@ import {
   overwriteOnChange,
 } from "./editor-overwrite-helpers";
 import {
+  findParagraphEntryFromId,
   findTextPathFromActualOffsetOfParagraphPath,
   isLargerThanForCharacterNode,
+  isOneOfParagraphTypes,
   setCharacterId,
 } from "./utilities";
 import { initCausalOrderQueueForEditor } from "./causal-order-helpers";
@@ -238,18 +240,20 @@ export function executeDownstreamSingleCRDTOp(editor, crdtOp) {
     node,
     paragraphPath,
     vectorClock: remoteVectorClock,
+    paragraphId
   } = crdtOp;
 
   // merge remote with local vector clock, increment it
   editor.vectorClock = vc.merge(editor.vectorClock, remoteVectorClock);
   vc.increment(editor.vectorClock, editor.peerId);
   if (type === "insert_text") {
+    const [paragraph, paragraphPath] = findParagraphEntryFromId(editor, paragraphId)
     // For upcoming inserting nodes, update their character id
     // setCharacterId(node, editor)
-    // Locate the paragraph and rga this node was inserted in
-    const [paragraphNode, path] = Editor.node(editor, paragraphPath);
+    // Locate the paragraph's rga this node was inserted in
     /**@type {RGA} */
-    const rga = paragraphNode.rga;
+    const rga = paragraph.rga
+    
     // console.log("Insertion crdtOp: ", { ...crdtOp });
     if (insertAfterNodeId === "") {
       // '' means insert after head
@@ -269,7 +273,7 @@ export function executeDownstreamSingleCRDTOp(editor, crdtOp) {
     }
   } else if (type === "remove_text") {
     // console.log("deletion crdtOp: ", { ...crdtOp });
-    const [paragraphNode, path] = Editor.node(editor, paragraphPath);
+    const [paragraphNode, path] = findParagraphEntryFromId(editor, paragraphId)
     /**@type {RGA} */
     const rga = paragraphNode.rga;
     const map = rga.chracterLinkedNodeMap;
@@ -283,7 +287,6 @@ export function executeDownstreamSingleCRDTOp(editor, crdtOp) {
       deleteNode.data.isTombStoned = true;
       rga.list.tombStoneCount++;
     }
-    console.log("Current list: ", { ...rga.list });
   } else if (type === "insert_paragraph") {
     const id = node.id;
     // After JSON.stringify, we need to re-assign RGA to the paragraph node
@@ -293,7 +296,6 @@ export function executeDownstreamSingleCRDTOp(editor, crdtOp) {
   } else if (type === "change_paragraph_type") {
     const { paragraphHLC } = crdtOp;
 
-    console.log({remoteHLC: paragraphHLC, localHLC: editor.paragraphHLC})
     // If remote has larger HLC, accept the remote change
     if (HLC.compare(paragraphHLC, editor.paragraphHLC) > 0) {
       crdtOp.acceptChange = true;
@@ -317,11 +319,13 @@ export function mapSingleOperationFromCRDT(editor, crdtOp) {
     paragraphPath,
     slateTargetPath,
     vectorClock: remoteVectorClock,
+    paragraphId
   } = crdtOp;
   console.log("Here is the crdtOp I received, ", { ...crdtOp });
 
   const slateOps = [];
   if (type === "insert_text") {
+    const [paragraph, paragraphPath] = findParagraphEntryFromId(editor, paragraphId)
     let [textPath, actualTextOffset] = findTextPathFromActualOffsetOfParagraphPath(
       editor,
       paragraphPath,
@@ -361,6 +365,7 @@ export function mapSingleOperationFromCRDT(editor, crdtOp) {
     if (crdtOp.alreadyDeleted) {
       return slateOps;
     }
+    const [paragraph, paragraphPath] = findParagraphEntryFromId(editor, paragraphId)
     const [textPath, actualTextOffset] = findTextPathFromActualOffsetOfParagraphPath(
       editor,
       paragraphPath,
@@ -397,6 +402,7 @@ export function mapSingleOperationFromCRDT(editor, crdtOp) {
     if (!crdtOp.acceptChange) {
       return slateOps
     }
+    const [paragraph, paragraphPath] = findParagraphEntryFromId(editor, paragraphId)
     const slateOp = {
       path: paragraphPath,
       newProperties: { type: newParagraphType },
