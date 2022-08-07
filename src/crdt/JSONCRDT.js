@@ -293,6 +293,7 @@ export function executeDownstreamSingleCRDTOp(editor, crdtOp) {
   } else if (type === "change_paragraph_type") {
     const { paragraphHLC } = crdtOp;
 
+    console.log({remoteHLC: paragraphHLC, localHLC: editor.paragraphHLC})
     // If remote has larger HLC, accept the remote change
     if (HLC.compare(paragraphHLC, editor.paragraphHLC) > 0) {
       crdtOp.acceptChange = true;
@@ -321,12 +322,14 @@ export function mapSingleOperationFromCRDT(editor, crdtOp) {
 
   const slateOps = [];
   if (type === "insert_text") {
-    const [_, actualTextOffset] = findTextPathFromActualOffsetOfParagraphPath(
+    let [textPath, actualTextOffset] = findTextPathFromActualOffsetOfParagraphPath(
       editor,
       paragraphPath,
       index
     );
-    let textPath = [...slateTargetPath];
+    
+    // let textPath = [...slateTargetPath];
+    // console.log({textPath, _})
     // If this text node hasnt been deleted beforehand
     if (Editor.node(editor, textPath)) {
       const slateOp = {
@@ -358,12 +361,12 @@ export function mapSingleOperationFromCRDT(editor, crdtOp) {
     if (crdtOp.alreadyDeleted) {
       return slateOps;
     }
-    const [_, actualTextOffset] = findTextPathFromActualOffsetOfParagraphPath(
+    const [textPath, actualTextOffset] = findTextPathFromActualOffsetOfParagraphPath(
       editor,
       paragraphPath,
       index
     );
-    let textPath = [...slateTargetPath];
+    // let textPath = [...slateTargetPath];
     const textOffset = actualTextOffset;
     // Only deletes it when it exists
     if (Editor.node(editor, textPath)) {

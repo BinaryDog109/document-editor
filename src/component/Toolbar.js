@@ -36,13 +36,13 @@ export const Toolbar = ({ selection }) => {
               position: 1,
             };
             const op2 = {
-              path: [0, 1],
+              path: [1],
               position: 1,
               properties: {},
               type: "merge_node",
             };
             editor.apply(op);
-            editor.apply(op2);
+            // editor.apply(op2);
           } catch (error) {
             console.log(error.message);
           }

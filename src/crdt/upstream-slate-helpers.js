@@ -182,6 +182,9 @@ export function bufferCRDTOperation(editor, op) {
 
         crdtOps.push(crdtOp);
       }
+      if (slateOp.type === "remove_node") {
+        console.log("!!!Removing node")
+      }
       /**
        * newProperties: {type: 'h1'}
          path: [0]

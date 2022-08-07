@@ -72,7 +72,7 @@ export function overwriteOnChange(editor) {
           // Send to buffer
           bufferCRDTOperation(editor, crdtOp);
         });
-        console.log({ buffer: editor.crdtOpBuffer });
+        // console.log({ buffer: editor.crdtOpBuffer });
       }
     }
     onChange();

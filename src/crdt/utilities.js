@@ -27,7 +27,7 @@ export const isCausallyReady = (localClock, remoteClock, remoteClockId) => {
     if (key === remoteClockId) continue;
     const localValue = localClock[key] || 0;
     const remoteValue = remoteClock[key] || 0;
-    console.log({remoteValue, localValue, key, remoteClockId})
+    // console.log({remoteValue, localValue, key, remoteClockId})
     if (remoteValue > localValue) return false;
   }
   
@@ -85,13 +85,13 @@ export function findTextPathFromActualOffsetOfParagraphPath(
   paragraphPath,
   visibleIndex
 ) {
-  console.log("actual index: ", visibleIndex);
+  // console.log("actual index: ", visibleIndex);
   const [paragraphNode] = Editor.node(editor, paragraphPath);
   let offsetMark = visibleIndex;
   let textPath = [...paragraphPath, 0]; // From the first text node
   const textsGenerator = Node.texts(paragraphNode);
   for (let [textNode, relativePath] of textsGenerator) {
-    console.log("looping through text nodes: ", textNode.text, relativePath);
+    // console.log("looping through text nodes: ", textNode.text, relativePath);
     const textLength = textNode.text.length;
     if (offsetMark - textLength > 0) {
       offsetMark -= textLength;
@@ -115,6 +115,14 @@ export const isOneOfParagraphTypes = (node) => {
     node.type === "h5"
   );
 };
+
+export const findParagraphIdAt = (editor, paragraphId, path) => {
+  const [paragraph] = Editor.above(editor, {
+    match: (n) => isOneOfParagraphTypes(n),
+    at: path,
+  });
+  return paragraph.id
+}
 
 export const findParagraphNodeEntryAt = (editor, path) => {
   const entry = Editor.above(editor, {
