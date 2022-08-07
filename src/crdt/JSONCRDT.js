@@ -410,6 +410,16 @@ export function mapSingleOperationFromCRDT(editor, crdtOp) {
       isRemote: true,
     };
     slateOps.push(slateOp);
+  } else if (
+    type === "remove_paragraph"
+  ) {
+    const [paragraph, paragraphPath] = findParagraphEntryFromId(editor, paragraphId)
+    const slateOp = {
+      type: "remove_node",
+      path: paragraphPath,
+      isRemote: true
+    };
+    slateOps.push(slateOp)
   }
   return slateOps;
 }

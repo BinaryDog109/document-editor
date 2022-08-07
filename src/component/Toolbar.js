@@ -32,6 +32,11 @@ export const Toolbar = ({ selection }) => {
       <button
         onMouseDown={() => {
           try {
+            const op = {
+              type: "remove_node",
+              path: [1],
+            };
+            editor.apply(op)
             // const op = {
             //   type: "merge_node",
             //   path: [1],
@@ -45,12 +50,6 @@ export const Toolbar = ({ selection }) => {
             // };
             // editor.apply(op);
             // editor.apply(op2);
-            const [node] = Editor.nodes(editor, {
-              match: n => isOneOfParagraphTypes(n) && n.id==='',
-              mode: 'highest',
-              at: []
-            })
-            console.log(node)
           } catch (error) {
             console.log(error.message);
           }

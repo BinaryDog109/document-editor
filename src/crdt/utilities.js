@@ -135,6 +135,10 @@ export const findParagraphIdAt = (editor, paragraphId, path) => {
   return paragraph.id
 }
 
+export const isParagraphRGAEmpty = rga => {
+  return rga.list.tombStoneCount === rga.list.size
+}
+
 export const findParagraphNodeEntryAt = (editor, path) => {
   
   const entry = Editor.above(editor, {
