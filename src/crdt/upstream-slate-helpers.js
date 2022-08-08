@@ -98,7 +98,7 @@ export function executeUpstreamCRDTOps(editor, crdtOps) {
  */
 export function mapOperationsFromSlate(editor, slateOps) {
   const crdtOps = [];
-  for (let slateOp of slateOps) {
+  for (let [index, slateOp] of slateOps.entries()) {
     // console.log({slateOp})
     /**
        *  Example:
@@ -120,16 +120,35 @@ export function mapOperationsFromSlate(editor, slateOps) {
     }
     if (slateOp.type === "insert_text" || slateOp.type === "remove_text") {
       const slatePath = [...slateOp.path];
+      const mergedOperation = slateOps[index + 2];
       const [paragraph, paragraphPath] = findParagraphNodeEntryAt(
         editor,
         slatePath
       );
       const paragraphId = paragraph.id;
-      // slateOp.offset is relative to that text node, so we need to find the actual index relative to the paragraph
-      let actualOffset = findActualOffsetFromParagraphAt(editor, {
-        path: slatePath,
-        offset: slateOp.offset,
-      });
+
+      let actualOffset;
+      if (
+        mergedOperation &&
+        mergedOperation.type === "merge_node" &&
+        mergedOperation.position
+      ) {
+        // slateOp.offset is relative to that text node, so we need to find the actual index relative to the paragraph
+        actualOffset = findActualOffsetFromParagraphAt(
+          editor,
+          {
+            path: slatePath,
+            offset: slateOp.offset,
+          },
+          mergedOperation.position
+        );
+      } else {
+        // slateOp.offset is relative to that text node, so we need to find the actual index relative to the paragraph
+        actualOffset = findActualOffsetFromParagraphAt(editor, {
+          path: slatePath,
+          offset: slateOp.offset,
+        });
+      }
       console.log({actualOffset})
       const chars = slateOp.text.split("");
       if (slateOp.type === "insert_text") {
@@ -171,13 +190,15 @@ export function mapOperationsFromSlate(editor, slateOps) {
           crdtOps.push(crdtOp);
         });
       }
-    }
-    /**
+    } else if (
+      /**
        * node: {children: Array(1), type: 'paragraph', rga: RGA}
          path: [1]
          type: "insert_node"
        */
-    else if (slateOp.type === "insert_node" && slateOp.node.type === "paragraph") {
+      slateOp.type === "insert_node" &&
+      slateOp.node.type === "paragraph"
+    ) {
       const paragraph = slateOp.node;
       // handle inserting a new paragraph (insert break)
       if (Object.keys(paragraph.rga).length !== 0) return;
@@ -204,23 +225,21 @@ export function mapOperationsFromSlate(editor, slateOps) {
         isOneOfParagraphTypes(slateOp.properties) &&
         isParagraphRGAEmpty(slateOp.properties.rga))
     ) {
-      let paragraph = slateOp.properties
-      if (slateOp.type === "remove_node")
-        paragraph = slateOp.node
-      console.log({slateOp})
+      let paragraph = slateOp.properties;
+      if (slateOp.type === "remove_node") paragraph = slateOp.node;
+      console.log({ slateOp });
       const crdtOp = new CRDTOperation(slateOp.type);
       crdtOp.type = "remove_paragraph";
-      crdtOp.paragraphId = paragraph.id
+      crdtOp.paragraphId = paragraph.id;
       crdtOp.peerId = editor.peerId;
-      crdtOps.push(crdtOp)
-    }
-    /**
+      crdtOps.push(crdtOp);
+    } else if (
+      /**
        * newProperties: {type: 'h1'}
          path: [0]
          properties: {type: 'paragraph'}
          type: "set_node"
        */
-    else if (
       slateOp.type === "set_node" &&
       isOneOfParagraphTypes(slateOp.newProperties)
     ) {

@@ -158,19 +158,24 @@ export const findParagraphNodeEntryAt = (editor, path) => {
   
 };
 
-export const findActualOffsetFromParagraphAt = (editor, point) => {
+export const findActualOffsetFromParagraphAt = (editor, point, positionAfterMerged) => {
   const [paragraph, path] = findParagraphNodeEntryAt(editor, point.path);
   
   const generator = Node.texts(paragraph);
 
   let offset = point.offset;
+  let currentNodeLen = 0
   for (const [node, path] of generator) {
-    console.log(point)
     // The path is relative, so we just compare the last number of a path
     // If the text node is before our text node
     if (Path.compare(path, [point.path[point.path.length - 1]]) === -1) {
-      offset += Node.string(node).length;
+      currentNodeLen = Node.string(node).length;
+      offset += currentNodeLen;
     }
+  }
+  if (positionAfterMerged) {
+    offset -= currentNodeLen
+    offset += positionAfterMerged
   }
   return offset;
 };
