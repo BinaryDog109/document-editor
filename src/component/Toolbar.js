@@ -33,10 +33,15 @@ export const Toolbar = ({ selection }) => {
         onMouseDown={() => {
           try {
             const op = {
-              type: "remove_node",
-              path: [1],
+              // No problem when offset is very big
+              offset: 2,
+              path: [0, 1],
+              text: "e",
+              type: "insert_text",
+              // Added isRemote flag so slatejs onChange wont modify the linked list again
+              isRemote: true,
             };
-            editor.apply(op)
+            editor.apply(op);
             // const op = {
             //   type: "merge_node",
             //   path: [1],

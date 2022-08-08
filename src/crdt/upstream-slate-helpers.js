@@ -149,7 +149,7 @@ export function mapOperationsFromSlate(editor, slateOps) {
           offset: slateOp.offset,
         });
       }
-      console.log({actualOffset})
+      console.log({ actualOffset });
       const chars = slateOp.text.split("");
       if (slateOp.type === "insert_text") {
         chars.forEach((char) => {
@@ -252,6 +252,42 @@ export function mapOperationsFromSlate(editor, slateOps) {
       crdtOp.type = "change_paragraph_type";
       crdtOp.paragraphId = paragraph.id;
       crdtOps.push(crdtOp);
+    } else if (
+    /**
+       * node: {text: 'a', bold: true}
+         path: (2) [0, 1]
+         type: "insert_node"
+       */
+      slateOp.type === "insert_node" &&
+      slateOp.node.text &&
+      Object.keys(slateOp.node).length > 1
+    ) {
+      const insertingNode = slateOp.node;
+      const { text, ...markProperties } = insertingNode;
+      const slatePath = [...slateOp.path];
+      const [paragraph, paragraphPath] = findParagraphNodeEntryAt(
+        editor,
+        slatePath
+      );
+      const paragraphId = paragraph.id;
+      const actualOffset = findActualOffsetFromParagraphAt(editor, {
+        path: slatePath,
+        offset: 0,
+      });
+
+      const characterNode = new CharacterNode(text, editor.peerId);
+      const crdtOp = new CRDTOperation(
+        "insert_marked_node",
+        characterNode,
+        actualOffset,
+        paragraphPath,
+        slatePath,
+        editor.peerId
+      );
+      crdtOp.paragraphId = paragraphId;
+      crdtOp.markProperties = markProperties;
+      crdtOps.push(crdtOp);
+      console.log({crdtOp})
     }
   }
 
