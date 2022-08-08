@@ -99,6 +99,7 @@ export function executeUpstreamCRDTOps(editor, crdtOps) {
 export function mapOperationsFromSlate(editor, slateOps) {
   const crdtOps = [];
   for (let slateOp of slateOps) {
+    // console.log({slateOp})
     /**
        *  Example:
        *  insert_text: {
@@ -129,6 +130,7 @@ export function mapOperationsFromSlate(editor, slateOps) {
         path: slatePath,
         offset: slateOp.offset,
       });
+      console.log({actualOffset})
       const chars = slateOp.text.split("");
       if (slateOp.type === "insert_text") {
         chars.forEach((char) => {
@@ -175,7 +177,7 @@ export function mapOperationsFromSlate(editor, slateOps) {
          path: [1]
          type: "insert_node"
        */
-    if (slateOp.type === "insert_node" && slateOp.node.type === "paragraph") {
+    else if (slateOp.type === "insert_node" && slateOp.node.type === "paragraph") {
       const paragraph = slateOp.node;
       // handle inserting a new paragraph (insert break)
       if (Object.keys(paragraph.rga).length !== 0) return;
@@ -196,13 +198,15 @@ export function mapOperationsFromSlate(editor, slateOps) {
          properties: {type: 'paragraph', id: 'cl6jmlhft0000356fslw9esq4', rga: RGA}
          type: "merge_node"
        */
-    if (
-      slateOp.type === "remove_node" ||
+    else if (
+      (slateOp.type === "remove_node" && slateOp.node.type === "paragraph") ||
       (slateOp.type === "merge_node" &&
         isOneOfParagraphTypes(slateOp.properties) &&
         isParagraphRGAEmpty(slateOp.properties.rga))
     ) {
-      const paragraph = slateOp.properties
+      let paragraph = slateOp.properties
+      if (slateOp.type === "remove_node")
+        paragraph = slateOp.node
       console.log({slateOp})
       const crdtOp = new CRDTOperation(slateOp.type);
       crdtOp.type = "remove_paragraph";
@@ -216,7 +220,7 @@ export function mapOperationsFromSlate(editor, slateOps) {
          properties: {type: 'paragraph'}
          type: "set_node"
        */
-    if (
+    else if (
       slateOp.type === "set_node" &&
       isOneOfParagraphTypes(slateOp.newProperties)
     ) {

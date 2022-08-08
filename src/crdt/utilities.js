@@ -140,21 +140,32 @@ export const isParagraphRGAEmpty = rga => {
 }
 
 export const findParagraphNodeEntryAt = (editor, path) => {
-  
-  const entry = Editor.above(editor, {
+  try {
+    const entry = Editor.above(editor, {
     match: (n) => isOneOfParagraphTypes(n),
     at: path,
   });
   return entry;
+  } catch (error) {
+    // If deleting a node instead of text from a paragraph
+    path = [path[0]]
+    const [entry] = Editor.nodes(editor, {
+      match: (n) => isOneOfParagraphTypes(n),
+      at: path,
+    });
+    return entry;
+  }
+  
 };
 
 export const findActualOffsetFromParagraphAt = (editor, point) => {
   const [paragraph, path] = findParagraphNodeEntryAt(editor, point.path);
-
+  
   const generator = Node.texts(paragraph);
 
   let offset = point.offset;
   for (const [node, path] of generator) {
+    console.log(point)
     // The path is relative, so we just compare the last number of a path
     // If the text node is before our text node
     if (Path.compare(path, [point.path[point.path.length - 1]]) === -1) {
