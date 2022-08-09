@@ -64,7 +64,7 @@ export function executeUpstreamCRDTOps(editor, crdtOps) {
       setInsertAfterNodeIdForCRDTOp(op, insertAfterNodeId);
       rga.chracterLinkedNodeMap.set(nodeForLinkedList.id, insertedLinkedNode);
     }
-    if (type === "remove_text") {
+    if (type === "remove_text" || type === "remove_node") {
       // No need to update character node's id in deletion
       // Visible index is op.index
       const [paragraphNode, path] = Editor.node(editor, op.paragraphPath);
@@ -98,7 +98,7 @@ export function executeUpstreamCRDTOps(editor, crdtOps) {
  */
 export function mapOperationsFromSlate(editor, slateOps) {
   const crdtOps = [];
-  let tmpActualOffsetForMarkedNodeDeletion = null;
+  let firstCharOffset = null;
   for (let [index, slateOp] of slateOps.entries()) {
     // console.log({slateOp})
     /**
@@ -119,7 +119,7 @@ export function mapOperationsFromSlate(editor, slateOps) {
     if (slateOp.isRemote) {
       continue;
     }
-    if (slateOp.type === "insert_text" || slateOp.type === "remove_text") {
+    if (slateOp.type === "insert_text" || slateOp.type === "remove_text" || slateOp.type === "remove_node") {
       const slatePath = [...slateOp.path];
 
       const [paragraph, paragraphPath] = findParagraphNodeEntryAt(
@@ -135,8 +135,9 @@ export function mapOperationsFromSlate(editor, slateOps) {
         offset: slateOp.offset,
       });
 
-      const chars = slateOp.text.split("");
+      
       if (slateOp.type === "insert_text") {
+        const chars = slateOp.text.split("");
         chars.forEach((char) => {
           const characterNode = new CharacterNode(char, editor.peerId);
           const crdtOp = new CRDTOperation(
@@ -150,7 +151,13 @@ export function mapOperationsFromSlate(editor, slateOps) {
           crdtOp.paragraphId = paragraphId;
           crdtOps.push(crdtOp);
         });
-      } else if (slateOp.type === "remove_text") {
+      } else if (slateOp.type === "remove_text" || (slateOp.type === "remove_node" && slateOp.node.text)) {
+        let chars
+        if (slateOp.node) {
+          chars = slateOp.node.text.split("");
+        }
+        else
+          chars = slateOp.text.split("");
         /**
        * offset: 2
          path: (2) [0, 0]
@@ -166,7 +173,7 @@ export function mapOperationsFromSlate(editor, slateOps) {
         );
         // mergedNode has a path of before-merging and a position of after-merging
         if (mergedOperation) {
-          if (tmpActualOffsetForMarkedNodeDeletion === null) {
+          if (firstCharOffset === null) {
             // slateOp.offset is relative to that text node, so we need to find the actual index relative to the paragraph
             actualOffset = findActualOffsetFromParagraphAt(
               editor,
@@ -176,17 +183,17 @@ export function mapOperationsFromSlate(editor, slateOps) {
               },
               mergedOperation.position
             );
-            tmpActualOffsetForMarkedNodeDeletion = actualOffset;
+            firstCharOffset = actualOffset;
           }
           
           // eslint-disable-next-line no-loop-func
           chars.forEach((char) => {
-            console.log({ tmpActualOffsetForMarkedNodeDeletion, char });
-            const nodeToBeDeleted = rga.findRGANodeAt(tmpActualOffsetForMarkedNodeDeletion);
+            console.log({ firstCharOffset, char });
+            const nodeToBeDeleted = rga.findRGANodeAt(firstCharOffset);
             const crdtOp = new CRDTOperation(
               slateOp.type,
               nodeToBeDeleted.data,
-              tmpActualOffsetForMarkedNodeDeletion++,
+              firstCharOffset++,
               paragraphPath,
               slatePath,
               editor.peerId
@@ -198,13 +205,18 @@ export function mapOperationsFromSlate(editor, slateOps) {
 
           continue;
         }
+        // Find the offset of the first char, then increase it by one every char in every remove_text/node node
+        if (firstCharOffset === null) {
+          firstCharOffset = actualOffset
+        }
 
+        // eslint-disable-next-line no-loop-func
         chars.forEach((char) => {
-          const nodeToBeDeleted = rga.findRGANodeAt(actualOffset);
+          const nodeToBeDeleted = rga.findRGANodeAt(firstCharOffset);
           const crdtOp = new CRDTOperation(
             slateOp.type,
             nodeToBeDeleted.data,
-            actualOffset++,
+            firstCharOffset++,
             paragraphPath,
             slatePath,
             editor.peerId
