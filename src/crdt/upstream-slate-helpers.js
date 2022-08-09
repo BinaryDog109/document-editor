@@ -30,7 +30,7 @@ export function executeUpstreamCRDTOps(editor, crdtOps) {
     // increase local vector clock
     vc.increment(editor.vectorClock, editor.peerId);
 
-    if (type === "insert_text") {
+    if (type === "insert_text" || type === "insert_marked_node") {
       setCharacterId(node, editor);
       const paragraphPath = op.paragraphPath;
       const [paragraphNode, path] = Editor.node(editor, paragraphPath);
@@ -87,6 +87,7 @@ export function executeUpstreamCRDTOps(editor, crdtOps) {
       op.peerId = editor.peerId;
       console.log("Changed paragraph type to: ", op.newParagraphType);
     }
+    
   });
   return crdtOps;
 }
@@ -254,6 +255,7 @@ export function mapOperationsFromSlate(editor, slateOps) {
       crdtOps.push(crdtOp);
     } else if (
     /**
+     * Start inserting a marked text node
        * node: {text: 'a', bold: true}
          path: (2) [0, 1]
          type: "insert_node"
@@ -296,7 +298,7 @@ export function mapOperationsFromSlate(editor, slateOps) {
 
 // CRDTOperation Upstream Helpers
 export function setInsertAfterNodeIdForCRDTOp(crdtOp, insertAfterNodeId) {
-  if (crdtOp.type !== "insert_text") {
+  if (crdtOp.type !== "insert_text" && crdtOp.type !== "insert_marked_node") {
     throw Error("Wrong type of operation!");
   }
   crdtOp.insertAfterNodeId = insertAfterNodeId;
