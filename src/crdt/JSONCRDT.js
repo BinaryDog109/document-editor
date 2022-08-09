@@ -246,7 +246,7 @@ export function executeDownstreamSingleCRDTOp(editor, crdtOp) {
   // merge remote with local vector clock, increment it
   editor.vectorClock = vc.merge(editor.vectorClock, remoteVectorClock);
   vc.increment(editor.vectorClock, editor.peerId);
-  if (type === "insert_text") {
+  if (type === "insert_text" || type === "insert_marked_node") {
     const [paragraph, paragraphPath] = findParagraphEntryFromId(editor, paragraphId)
     // For upcoming inserting nodes, update their character id
     // setCharacterId(node, editor)
@@ -324,7 +324,7 @@ export function mapSingleOperationFromCRDT(editor, crdtOp) {
   console.log("Here is the crdtOp I received, ", { ...crdtOp });
 
   const slateOps = [];
-  if (type === "insert_text") {
+  if (type === "insert_text" || type === "insert_marked_node") {
     const [paragraph, paragraphPath] = findParagraphEntryFromId(editor, paragraphId)
     let [textPath, actualTextOffset] = findTextPathFromActualOffsetOfParagraphPath(
       editor,

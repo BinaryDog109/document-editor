@@ -87,7 +87,6 @@ export function executeUpstreamCRDTOps(editor, crdtOps) {
       op.peerId = editor.peerId;
       console.log("Changed paragraph type to: ", op.newParagraphType);
     }
-    
   });
   return crdtOps;
 }
@@ -99,6 +98,7 @@ export function executeUpstreamCRDTOps(editor, crdtOps) {
  */
 export function mapOperationsFromSlate(editor, slateOps) {
   const crdtOps = [];
+  let tmpActualOffsetForMarkedNodeDeletion = null;
   for (let [index, slateOp] of slateOps.entries()) {
     // console.log({slateOp})
     /**
@@ -121,7 +121,7 @@ export function mapOperationsFromSlate(editor, slateOps) {
     }
     if (slateOp.type === "insert_text" || slateOp.type === "remove_text") {
       const slatePath = [...slateOp.path];
-      const mergedOperation = slateOps[index + 2];
+
       const [paragraph, paragraphPath] = findParagraphNodeEntryAt(
         editor,
         slatePath
@@ -129,28 +129,12 @@ export function mapOperationsFromSlate(editor, slateOps) {
       const paragraphId = paragraph.id;
 
       let actualOffset;
-      if (
-        mergedOperation &&
-        mergedOperation.type === "merge_node" &&
-        mergedOperation.position
-      ) {
-        // slateOp.offset is relative to that text node, so we need to find the actual index relative to the paragraph
-        actualOffset = findActualOffsetFromParagraphAt(
-          editor,
-          {
-            path: slatePath,
-            offset: slateOp.offset,
-          },
-          mergedOperation.position
-        );
-      } else {
-        // slateOp.offset is relative to that text node, so we need to find the actual index relative to the paragraph
-        actualOffset = findActualOffsetFromParagraphAt(editor, {
-          path: slatePath,
-          offset: slateOp.offset,
-        });
-      }
-      console.log({ actualOffset });
+      // slateOp.offset is relative to that text node, so we need to find the actual index relative to the paragraph
+      actualOffset = findActualOffsetFromParagraphAt(editor, {
+        path: slatePath,
+        offset: slateOp.offset,
+      });
+
       const chars = slateOp.text.split("");
       if (slateOp.type === "insert_text") {
         chars.forEach((char) => {
@@ -173,10 +157,49 @@ export function mapOperationsFromSlate(editor, slateOps) {
          text: "cd"
          type: "remove_text"
        */
+        // find the corresponidng char node in the list
+        /**@type {RGA} */
+        const rga = paragraph.rga;
+        // If deleting marked nodes, there will be an operation called merge_node
+        const mergedOperation = slateOps.find(
+          (slateOp) => slateOp.type === "merge_node" && slateOp.position
+        );
+        // mergedNode has a path of before-merging and a position of after-merging
+        if (mergedOperation) {
+          if (tmpActualOffsetForMarkedNodeDeletion === null) {
+            // slateOp.offset is relative to that text node, so we need to find the actual index relative to the paragraph
+            actualOffset = findActualOffsetFromParagraphAt(
+              editor,
+              {
+                path: mergedOperation.path,
+                offset: 0,
+              },
+              mergedOperation.position
+            );
+            tmpActualOffsetForMarkedNodeDeletion = actualOffset;
+          }
+          
+          // eslint-disable-next-line no-loop-func
+          chars.forEach((char) => {
+            console.log({ tmpActualOffsetForMarkedNodeDeletion, char });
+            const nodeToBeDeleted = rga.findRGANodeAt(tmpActualOffsetForMarkedNodeDeletion);
+            const crdtOp = new CRDTOperation(
+              slateOp.type,
+              nodeToBeDeleted.data,
+              tmpActualOffsetForMarkedNodeDeletion++,
+              paragraphPath,
+              slatePath,
+              editor.peerId
+            );
+            crdtOp.paragraphId = paragraphId;
+            setDeletedNodeIdForCRDTOp(crdtOp, nodeToBeDeleted.data.id);
+            crdtOps.push(crdtOp);
+          });
+
+          continue;
+        }
+
         chars.forEach((char) => {
-          // find the corresponidng char node in the list
-          /**@type {RGA} */
-          const rga = paragraph.rga;
           const nodeToBeDeleted = rga.findRGANodeAt(actualOffset);
           const crdtOp = new CRDTOperation(
             slateOp.type,
@@ -254,15 +277,14 @@ export function mapOperationsFromSlate(editor, slateOps) {
       crdtOp.paragraphId = paragraph.id;
       crdtOps.push(crdtOp);
     } else if (
-    /**
+      /**
      * Start inserting a marked text node
        * node: {text: 'a', bold: true}
          path: (2) [0, 1]
          type: "insert_node"
        */
       slateOp.type === "insert_node" &&
-      slateOp.node.text &&
-      Object.keys(slateOp.node).length > 1
+      slateOp.node.text
     ) {
       const insertingNode = slateOp.node;
       const { text, ...markProperties } = insertingNode;
@@ -289,7 +311,7 @@ export function mapOperationsFromSlate(editor, slateOps) {
       crdtOp.paragraphId = paragraphId;
       crdtOp.markProperties = markProperties;
       crdtOps.push(crdtOp);
-      console.log({crdtOp})
+      console.log({ crdtOp });
     }
   }
 
