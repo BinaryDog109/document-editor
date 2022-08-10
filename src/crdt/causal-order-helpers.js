@@ -1,10 +1,11 @@
 import PriorityQueue from "priorityqueuejs";
+import { Editor } from "slate";
 import vc from "vectorclock";
 import {
   executeDownstreamSingleCRDTOp,
   mapSingleOperationFromCRDT,
 } from "./JSONCRDT";
-import { isCausallyReady } from "./utilities";
+import { executeSlateOp, isCausallyReady } from "./utilities";
 
 export function initCausalOrderQueueForEditor(editor) {
   editor.causalOrderQueue = new PriorityQueue((opA, opB) => {
@@ -31,7 +32,7 @@ export function executeCausallyRemoteOperation(editor, remoteCRDTOp, queue) {
     executeDownstreamSingleCRDTOp(editor, remoteCRDTOp);
     const slateOps = mapSingleOperationFromCRDT(editor, remoteCRDTOp);
     slateOps.forEach((op) => {
-      editor.apply(op);
+      executeSlateOp(editor, op)
     });
     while (
       !queue.isEmpty() &&
@@ -45,7 +46,7 @@ export function executeCausallyRemoteOperation(editor, remoteCRDTOp, queue) {
       executeDownstreamSingleCRDTOp(editor, nextOp);
       const slateOps = mapSingleOperationFromCRDT(editor, nextOp);
       slateOps.forEach((op) => {
-        editor.apply(op);
+        executeSlateOp(editor, op)
       });
     }
   }

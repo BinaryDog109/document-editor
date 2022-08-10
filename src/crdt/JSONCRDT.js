@@ -240,20 +240,23 @@ export function executeDownstreamSingleCRDTOp(editor, crdtOp) {
     node,
     paragraphPath,
     vectorClock: remoteVectorClock,
-    paragraphId
+    paragraphId,
   } = crdtOp;
 
   // merge remote with local vector clock, increment it
   editor.vectorClock = vc.merge(editor.vectorClock, remoteVectorClock);
   vc.increment(editor.vectorClock, editor.peerId);
   if (type === "insert_text" || type === "insert_marked_node") {
-    const [paragraph, paragraphPath] = findParagraphEntryFromId(editor, paragraphId)
+    const [paragraph, paragraphPath] = findParagraphEntryFromId(
+      editor,
+      paragraphId
+    );
     // For upcoming inserting nodes, update their character id
     // setCharacterId(node, editor)
     // Locate the paragraph's rga this node was inserted in
     /**@type {RGA} */
-    const rga = paragraph.rga
-    
+    const rga = paragraph.rga;
+
     // console.log("Insertion crdtOp: ", { ...crdtOp });
     if (insertAfterNodeId === "") {
       // '' means insert after head
@@ -273,7 +276,7 @@ export function executeDownstreamSingleCRDTOp(editor, crdtOp) {
     }
   } else if (type === "remove_text") {
     // console.log("deletion crdtOp: ", { ...crdtOp });
-    const [paragraphNode, path] = findParagraphEntryFromId(editor, paragraphId)
+    const [paragraphNode, path] = findParagraphEntryFromId(editor, paragraphId);
     /**@type {RGA} */
     const rga = paragraphNode.rga;
     const map = rga.chracterLinkedNodeMap;
@@ -319,33 +322,57 @@ export function mapSingleOperationFromCRDT(editor, crdtOp) {
     paragraphPath,
     slateTargetPath,
     vectorClock: remoteVectorClock,
-    paragraphId
+    paragraphId,
   } = crdtOp;
   console.log("Here is the crdtOp I received, ", { ...crdtOp });
 
   const slateOps = [];
   if (type === "insert_text" || type === "insert_marked_node") {
-    const [paragraph, paragraphPath] = findParagraphEntryFromId(editor, paragraphId)
-    let [textPath, actualTextOffset] = findTextPathFromActualOffsetOfParagraphPath(
+    const [paragraph, paragraphPath] = findParagraphEntryFromId(
       editor,
-      paragraphPath,
-      index
+      paragraphId
     );
-    
+    let [textPath, actualTextOffset] =
+      findTextPathFromActualOffsetOfParagraphPath(editor, paragraphPath, index);
+    console.log({ textPath, actualTextOffset });
     // let textPath = [...slateTargetPath];
     // console.log({textPath, _})
     // If this text node hasnt been deleted beforehand
     if (Editor.node(editor, textPath)) {
-      const slateOp = {
-        // No problem when offset is very big
-        offset: actualTextOffset,
-        path: textPath,
-        text: node.char,
-        type: "insert_text",
-        // Added isRemote flag so slatejs onChange wont modify the linked list again
-        isRemote: true,
-      };
-      slateOps.push(slateOp);
+      if (type === "insert_text") {
+        const slateOp = {
+          // No problem when offset is very big
+          offset: actualTextOffset,
+          path: textPath,
+          text: node.char,
+          type: "insert_text",
+          // Added isRemote flag so slatejs onChange wont modify the linked list again
+          isRemote: true,
+        };
+        slateOps.push(slateOp);
+      } else if (type === "insert_marked_node") {
+        const slateOpGroup = { group: true, ops: [] };
+        const markProperties = crdtOp.markProperties;
+        const slateOp1 = {
+          path: textPath,
+          position: actualTextOffset,
+          properties: {},
+          type: "split_node",
+          // Added isRemote flag so slatejs onChange wont modify the linked list again
+          isRemote: true,
+        };
+        const newNodePath = [...textPath]
+        newNodePath[newNodePath.length - 1] += 1
+        const slateOp2 = {
+          node: { text: node.char, ...markProperties },
+          // Increase one text node ahead because it is going to place the new node there
+          path: newNodePath,
+          type: "insert_node",
+          isRemote: true
+        };
+        slateOpGroup.ops.push(slateOp1, slateOp2)
+        slateOps.push(slateOpGroup);
+      }
     } else {
       // If this text node has been deleted, loop until it finds its previous text node. Offset doesnt matter here.
       while (Path.hasPrevious(textPath)) {
@@ -365,12 +392,13 @@ export function mapSingleOperationFromCRDT(editor, crdtOp) {
     if (crdtOp.alreadyDeleted) {
       return slateOps;
     }
-    const [paragraph, paragraphPath] = findParagraphEntryFromId(editor, paragraphId)
-    const [textPath, actualTextOffset] = findTextPathFromActualOffsetOfParagraphPath(
+    const [paragraph, paragraphPath] = findParagraphEntryFromId(
       editor,
-      paragraphPath,
-      index
+      paragraphId
     );
+    const [textPath, actualTextOffset] =
+      findTextPathFromActualOffsetOfParagraphPath(editor, paragraphPath, index, true);
+    console.log({textPath, actualTextOffset})
     // let textPath = [...slateTargetPath];
     const textOffset = actualTextOffset;
     // Only deletes it when it exists
@@ -381,6 +409,7 @@ export function mapSingleOperationFromCRDT(editor, crdtOp) {
         text: node.char,
         type: "remove_text",
         isRemote: true,
+        withoutNorm: true,
       };
       slateOps.push(slateOp);
     }
@@ -400,9 +429,12 @@ export function mapSingleOperationFromCRDT(editor, crdtOp) {
   } else if (type === "change_paragraph_type") {
     const { newParagraphType } = crdtOp;
     if (!crdtOp.acceptChange) {
-      return slateOps
+      return slateOps;
     }
-    const [paragraph, paragraphPath] = findParagraphEntryFromId(editor, paragraphId)
+    const [paragraph, paragraphPath] = findParagraphEntryFromId(
+      editor,
+      paragraphId
+    );
     const slateOp = {
       path: paragraphPath,
       newProperties: { type: newParagraphType },
@@ -410,16 +442,17 @@ export function mapSingleOperationFromCRDT(editor, crdtOp) {
       isRemote: true,
     };
     slateOps.push(slateOp);
-  } else if (
-    type === "remove_paragraph"
-  ) {
-    const [paragraph, paragraphPath] = findParagraphEntryFromId(editor, paragraphId)
+  } else if (type === "remove_paragraph") {
+    const [paragraph, paragraphPath] = findParagraphEntryFromId(
+      editor,
+      paragraphId
+    );
     const slateOp = {
       type: "remove_node",
       path: paragraphPath,
-      isRemote: true
+      isRemote: true,
     };
-    slateOps.push(slateOp)
+    slateOps.push(slateOp);
   }
   return slateOps;
 }

@@ -30,7 +30,7 @@ export const isCausallyReady = (localClock, remoteClock, remoteClockId) => {
     // console.log({remoteValue, localValue, key, remoteClockId})
     if (remoteValue > localValue) return false;
   }
-  
+
   if (remoteClockOwnValue > localClockRecordedRemoteClockValue) return true;
   else return false;
 };
@@ -81,20 +81,21 @@ export function isLargerThanForCharacterNode(chNode, otherCharNode) {
 }
 
 export function findParagraphEntryFromId(editor, paragraphId) {
-  console.log("Searching paragraph ", paragraphId)
+  console.log("Searching paragraph ", paragraphId);
   const [nodeEntry] = Editor.nodes(editor, {
-    match: n => isOneOfParagraphTypes(n) && n.id === paragraphId,
-    mode: 'highest',
-    at: []
-  })
-  
-  return nodeEntry
+    match: (n) => isOneOfParagraphTypes(n) && n.id === paragraphId,
+    mode: "highest",
+    at: [],
+  });
+
+  return nodeEntry;
 }
 
 export function findTextPathFromActualOffsetOfParagraphPath(
   editor,
   paragraphPath,
-  visibleIndex
+  visibleIndex,
+  isDeletingNode
 ) {
   // console.log("actual index: ", visibleIndex);
   const [paragraphNode] = Editor.node(editor, paragraphPath);
@@ -102,12 +103,20 @@ export function findTextPathFromActualOffsetOfParagraphPath(
   let textPath = [...paragraphPath, 0]; // From the first text node
   const textsGenerator = Node.texts(paragraphNode);
   for (let [textNode, relativePath] of textsGenerator) {
-    // console.log("looping through text nodes: ", textNode.text, relativePath);
+    console.log("looping through text nodes: ", offsetMark, {textNodeText: textNode.text}, relativePath);
     const textLength = textNode.text.length;
     if (offsetMark - textLength > 0) {
       offsetMark -= textLength;
       continue;
-    } else {
+    } else if (offsetMark === textLength && isDeletingNode) {
+      // Only when deleting a node, do we need to return the next text node if offsetMark === textLength
+      offsetMark -= textLength
+      textPath.pop();
+      textPath = textPath.concat(relativePath);
+      textPath[textPath.length - 1] += 1
+      return [textPath, offsetMark]
+    }
+     else {
       // Found our text node and index
       textPath.pop();
       textPath = textPath.concat(relativePath);
@@ -132,40 +141,59 @@ export const findParagraphIdAt = (editor, paragraphId, path) => {
     match: (n) => isOneOfParagraphTypes(n),
     at: path,
   });
-  return paragraph.id
-}
+  return paragraph.id;
+};
 
-export const isParagraphRGAEmpty = rga => {
-  return rga.list.tombStoneCount === rga.list.size
-}
+export const isParagraphRGAEmpty = (rga) => {
+  return rga.list.tombStoneCount === rga.list.size;
+};
 
 export const findParagraphNodeEntryAt = (editor, path) => {
   try {
     const entry = Editor.above(editor, {
-    match: (n) => isOneOfParagraphTypes(n),
-    at: path,
-  });
-  return entry;
+      match: (n) => isOneOfParagraphTypes(n),
+      at: path,
+    });
+    return entry;
   } catch (error) {
     // If deleting a node instead of text from a paragraph
-    path = [path[0]]
+    path = [path[0]];
     const [entry] = Editor.nodes(editor, {
       match: (n) => isOneOfParagraphTypes(n),
       at: path,
     });
     return entry;
   }
-  
 };
 
-export const findActualOffsetFromParagraphAt = (editor, point, positionAfterMerged) => {
+export function executeSlateOp(editor, slateOp) {
+  if (slateOp.group) {
+    Editor.withoutNormalizing(editor, ()=>{
+      slateOp.ops.forEach(op => {
+        editor.apply(op)
+      })
+    })
+  }
+  else if (slateOp.withoutNorm) {
+    Editor.withoutNormalizing(editor, () => {
+      editor.apply(slateOp);
+    });
+  } else editor.apply(slateOp);
+}
+
+export const findActualOffsetFromParagraphAt = (
+  editor,
+  point,
+  positionAfterMerged
+) => {
   const [paragraph, path] = findParagraphNodeEntryAt(editor, point.path);
-  
+
   const generator = Node.texts(paragraph);
 
   let offset = point.offset;
-  let currentNodeLen = 0
+  let currentNodeLen = 0;
   for (const [node, path] of generator) {
+    // console.log({node, path, compareTo: point.path})
     // The path is relative, so we just compare the last number of a path
     // If the text node is before our text node
     if (Path.compare(path, [point.path[point.path.length - 1]]) === -1) {
@@ -174,8 +202,8 @@ export const findActualOffsetFromParagraphAt = (editor, point, positionAfterMerg
     }
   }
   if (positionAfterMerged) {
-    offset -= currentNodeLen
-    offset += positionAfterMerged
+    offset -= currentNodeLen;
+    offset += positionAfterMerged;
   }
   return offset;
 };

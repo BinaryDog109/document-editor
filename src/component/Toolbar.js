@@ -8,8 +8,11 @@ import {
   toggleLinkNode,
 } from "../utility/EditorStyleUtils";
 import { useSlateStatic } from "slate-react";
-import { Editor } from "slate";
-import { isOneOfParagraphTypes } from "../crdt/utilities";
+import { Editor, Transforms } from "slate";
+import {
+  findActualOffsetFromParagraphAt,
+  isOneOfParagraphTypes,
+} from "../crdt/utilities";
 
 export const Toolbar = ({ selection }) => {
   const editor = useSlateStatic();
@@ -32,16 +35,35 @@ export const Toolbar = ({ selection }) => {
       <button
         onMouseDown={() => {
           try {
-            const op = {
-              // No problem when offset is very big
-              offset: 2,
-              path: [0, 1],
-              text: "e",
-              type: "insert_text",
-              // Added isRemote flag so slatejs onChange wont modify the linked list again
-              isRemote: true,
-            };
-            editor.apply(op);
+            // findActualOffsetFromParagraphAt(editor, {
+            //   path: [0],
+            //   offset: 2
+            // })
+            Editor.withoutNormalizing(editor, () => {
+              const op1 = {
+                // before splitting text path and offset in this text node
+                path: [0, 4],
+                position: 2,
+                properties: {},
+                type: "split_node",
+              };
+              const op2 = {
+                node: { text: "a", bold: true },
+                path: [0, 5],
+                type: "insert_node",
+              };
+
+              editor.apply(op1);
+              editor.apply(op2);
+              // const op3 = {
+              //   offset: 0,
+              //   path: [0, 1],
+              //   text: "a",
+              //   type: "remove_text",
+              // };
+              // editor.apply(op3);
+            });
+            
             // const op = {
             //   type: "merge_node",
             //   path: [1],
