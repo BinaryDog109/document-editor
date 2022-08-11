@@ -30,6 +30,3 @@ body {
   grid-template-rows: auto 1fr;
   place-items: center;
 }
-.editor {
-  position: relative;
-}

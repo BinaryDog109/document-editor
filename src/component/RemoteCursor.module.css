@@ -1,0 +1,11 @@
+.remote-cursor::after {
+    content: attr(data-label);
+    position: absolute;
+    background-color: inherit;
+    width: max-content;
+    color: white;
+    font-size: .5em;
+    transform: translateY(-100%);
+    padding: 1px;
+    opacity: .8;
+}

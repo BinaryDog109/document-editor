@@ -309,6 +309,15 @@ export function executeDownstreamSingleCRDTOp(editor, crdtOp) {
       paragraphHLC,
       performance.now()
     );
+  } else if (type === "set_remote_selection") {
+    const {selection, chatId, peerId} = crdtOp
+    editor.setRemoteCursorMap(prev => ({
+      ...prev,
+      [peerId]: {
+        selection,
+        chatId: chatId
+      }
+    }))
   }
   return crdtOp;
 }
