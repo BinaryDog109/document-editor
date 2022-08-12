@@ -30,7 +30,7 @@ body {
   grid-template-rows: auto 1fr;
   place-items: center;
 }
-button {
+button, .button {
   font-family: inherit;
   background-color: var(--body-bg-color);
   color: var(--primary-color);
@@ -41,6 +41,7 @@ button {
   outline: none;
   box-shadow: 2px 2px 2px 0px var(--box-shadow-color);
 }
+.button:hover,
 button:hover,
 button.active {
   background-color: var(--primary-color);

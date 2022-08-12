@@ -24,12 +24,10 @@ export const CreateRoomModal = ({
             <CopyToClipboard text={roomId}
           onCopy={() => setCopied(true)}>
             <h3
+            className="button"
               style={{
                 fontSize: "1rem",
                 padding: "0 .5em",
-                marginLeft: ".5em",
-                backgroundColor: "var(--body-bg-color)",
-                color: "var(--primary-color)",
                 textAlign: "center",
                 cursor: "pointer",
               }}

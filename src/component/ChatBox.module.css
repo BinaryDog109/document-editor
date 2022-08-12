@@ -1,7 +1,7 @@
 .chat-container {
   position: relative;
   padding: 0.2em 0.5em;
-  background-color: var(--secondary-color);
+  background-color: var(--primary-color);
   border-radius: var(--default-border-radius);
   position: fixed;
   bottom: 0;
@@ -15,6 +15,7 @@
   transition: transform 250ms;
   font-family: var(--default-font-family);
   font-size: 1rem;
+  box-shadow: 0 0 5px 2px var(--box-shadow-color);
 }
 .expand {
   transform: translateY(0%);
@@ -28,6 +29,7 @@
 }
 .title {
   cursor: pointer;
+  color: var(--info-color)
 }
 .chat-content p {
   border-radius: var(--default-border-radius);
@@ -36,16 +38,16 @@
 .chat-content p::before {
   content: attr(data-chat-id);
   display: block;
-  color: #ddd;
+  color: var(--primary-color);
   font-size: .5em;
 }
 p.remote {
   background-color: var(--body-bg-color);
   align-self: flex-start;
-  color: white;
+  color: var(--primary-color);
 }
 p.me {
-  background-color: var(--primary-color);
+  background-color: var(--secondary-color);
   align-self: flex-end;
-  color: white;
+  color: var(--primary-color);
 }
