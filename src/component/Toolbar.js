@@ -32,7 +32,7 @@ export const Toolbar = ({ selection }) => {
   };
   return (
     <div className={styles.toolbar}>
-      <button
+      <button style={{display: 'none'}}
         onMouseDown={() => {
           try {
             // findActualOffsetFromParagraphAt(editor, {
@@ -139,76 +139,6 @@ export const Toolbar = ({ selection }) => {
         <i className="fa-solid fa-strikethrough"></i>
       </button>
 
-      <button
-        title="Superscript"
-        onMouseDown={(e) => handleMouseDown(e, "superscript")}
-        id="superscript"
-        className={`${styles["operation-button"]} script ${
-          isStyleActive(editor, "superscript") ? styles.active : ""
-        }`}
-      >
-        <i className="fa-solid fa-superscript"></i>
-      </button>
-      <button
-        title="Subscript"
-        onMouseDown={(e) => handleMouseDown(e, "subscript")}
-        id="subscript"
-        className={`${styles["operation-button"]} script ${
-          isStyleActive(editor, "subscript") ? styles.active : ""
-        }`}
-      >
-        <i className="fa-solid fa-subscript"></i>
-      </button>
-
-      {/* <!-- List operations --> */}
-      {/* <button id="insertOrderedList" className="${styles["operation-button"]}">
-        <i className="fa-solid fa-list-ol"></i>
-      </button>
-      <button id="insertUnorderedList" className="${styles["operation-button"]}">
-        <i className="fa-solid fa-list-ul"></i>
-      </button>
-
-      <button id="undo" className="${styles["operation-button"]}">
-        <i className="fa-solid fa-rotate-left"></i>
-      </button>
-      <button id="redo" className="${styles["operation-button"]}">
-        <i className="fa-solid fa-rotate-right"></i>
-      </button> */}
-      {/* <!-- Link operations --> */}
-      <button
-        title="Toggle Link"
-        onMouseDown={() => {
-          toggleLinkNode(editor);
-        }}
-        id="createLink"
-        className={`${styles["operation-button"]} ${
-          isOnLinkNode(editor, editor.selection) ? styles.active : ""
-        }`}
-      >
-        <i className="fa-solid fa-link"></i>
-      </button>
-
-      {/* <!-- Alignment --> */}
-      {/* <button id="justifyLeft" className="align ${styles["operation-button"]}">
-        <i className="fa-solid fa-align-left"></i>
-      </button>
-      <button id="justifyCenter" className="align ${styles["operation-button"]}">
-        <i className="fa-solid fa-align-center"></i>
-      </button>
-      <button id="justifyRight" className="align ${styles["operation-button"]}">
-        <i className="fa-solid fa-align-right"></i>
-      </button>
-      <button id="justifyFull" className="align ${styles["operation-button"]}">
-        <i className="fa-solid fa-align-justify"></i>
-      </button>
-
-      <button id="indent" className="spacing ${styles["operation-button"]}">
-        <i className="fa-solid fa-indent"></i>
-      </button>
-      <button id="outdent" className="spacing ${styles["operation-button"]}">
-        <i className="fa-solid fa-outdent"></i>
-      </button> */}
-
       {/* <!-- Headings --> */}
       <select
         onChange={onTopBlockStylesChange}
@@ -227,28 +157,6 @@ export const Toolbar = ({ selection }) => {
           Unknown
         </option>
       </select>
-      {/* <!-- Fonts --> */}
-      {/* <select className="operation-selection" name="" id="fontName"></select>
-      <select className="operation-selection" name="" id="fontSize"></select> */}
-      {/* <!-- Colors --> */}
-      {/* <div className={styles["input-wrapper"]}>
-        <input
-          type="color"
-          name=""
-          id="foreColor"
-          className="operation-input"
-        />
-        <label htmlFor="font-color">Font Color</label>
-      </div>
-      <div className={styles["input-wrapper"]}>
-        <input
-          type="color"
-          name=""
-          id="backColor"
-          className="operation-input"
-        />
-        <label htmlFor="highlight-color">Highlight Color</label>
-      </div> */}
     </div>
   );
 };

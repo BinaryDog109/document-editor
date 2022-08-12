@@ -77,6 +77,23 @@ export function overwriteOnChange(editor) {
     if (crdtOps.length > 0) {
       if (editor.unbuffered) {
         const dataChannelMapKeys = Object.keys(editor.dataChannelMap);
+        // Send all previously buffered operations first
+        if (editor.crdtOpBuffer && editor.crdtOpBuffer.length > 0) {          
+          const buffer = editor.crdtOpBuffer
+          while (buffer.length > 0) {
+            const op = buffer.shift();
+            // Increment and send the local vector clock every time we send an operation
+            vc.increment(editor.vectorClock, editor.peerId);
+            op.vectorClock = {};
+            op.vectorClock.clock = { ...editor.vectorClock.clock };
+            // Broadcast this operation
+            dataChannelMapKeys.forEach((otherUserId) => {
+              const dataChannel = editor.dataChannelMap[otherUserId];
+              dataChannel.send(JSON.stringify(op));
+            });
+          }
+        }
+        
         readyCRDTOps.forEach((op) => {
           // Increment and send the local vector clock every time we send an operation
           vc.increment(editor.vectorClock, editor.peerId);
