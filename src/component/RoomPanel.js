@@ -1,102 +1,86 @@
-import { useEffect, useState } from "react";
-import { v4 as uuid } from "uuid";
+import { useState } from "react";
 import { useWebRTCContext } from "../hooks/useWebRTCContext";
+import { ConnectRoomModal } from "./ConnectRoomModal";
+import { CreateRoomModal } from "./CreateRoomModal";
+import { CurrentConnectionModal } from "./CurrentConnectionModal";
 import styles from "./RoomPanel.module.css";
 
-const computeStatusStyleAndText = (hasHandshakeCompleted) => {
-  let backgroundColor = "";
-  let status = "";
-  if (!hasHandshakeCompleted) {
-    status = "Connecting";
-    backgroundColor = "var(--status-connecting-color)";
-  }
-  if (hasHandshakeCompleted) {
-    status = "Connected";
-    backgroundColor = "var(--status-connected-color)";
-  }
-  return [status, backgroundColor];
+const roomButtonStypes = {
+  width: "3em",
+  height: "3em",
+  borderRadius: "50% 50%",
+  fontSize: "1em",
 };
-
 export const RoomPanel = () => {
+  const [openCreateRoomModal, setOpenCreateRoomModal] = useState(false);
+  const [openJoinRoomModal, setOpenJoinRoomModal] = useState(false);
+  const [openCurrentConnectionModal, setOpenCurrentConnectionModal] =
+    useState(false);
   const [roomId, setRoomId] = useState("");
   const [joiningRoomId, setJoiningRoomId] = useState("");
-  const { socket, peerConnectionsMap, otherUsers, hasHandshakeCompletedMap } =
-    useWebRTCContext();
- 
+  const { socket, otherUsers, hasHandshakeCompletedMap } = useWebRTCContext();
+
   return (
     <>
       <div className={styles["room-status"]}>
-        {!otherUsers ? (
-          <span
-            style={{
-              backgroundColor: "var(--status-disconnected-color)",
-            }}
-          >
-            Disconnected
-          </span>
-        ) : null}
-        {otherUsers.map((otherUserId) => {
-          const [status, backgroundColor] = computeStatusStyleAndText(
-            hasHandshakeCompletedMap[otherUserId]
-          );
-          return (
-            <span key={otherUserId}
-              style={{
-                backgroundColor: backgroundColor,
-              }}
-            >
-              {otherUserId}: {status}
-            </span>
-          );
-        })}
+        <button
+          onClick={() => setOpenCurrentConnectionModal(true)}
+          style={roomButtonStypes}
+          title="Current Online Users"
+          data-current-users-number={
+            Object.keys(hasHandshakeCompletedMap).length
+          }
+        >
+          <i className="fa-solid fa-people-line"></i>
+        </button>
+        <CurrentConnectionModal
+          open={openCurrentConnectionModal}
+          onClose={() => setOpenCurrentConnectionModal(false)}
+          otherUsers={otherUsers}
+          hasHandshakeCompletedMap={hasHandshakeCompletedMap}
+        />
       </div>
       <div className={styles["create-room-panel"]}>
-        <button
-          onClick={() => {
-            const id = uuid();
-            socket.emit("join room", id);
-            setRoomId(id);
-          }}
-          style={{ padding: ".5em" }}
-        >
-          Create a room
-        </button>
-        {roomId && (
-          <span
-            style={{
-              fontSize: "1rem",
-              padding: "0 .5em",
-              marginLeft: ".5em",
-              backgroundColor: "var(--body-bg-color)",
-              color: "white",
-            }}
-          >
-            {roomId}
-          </span>
+        {otherUsers.length > 0 ? null : (
+          <>
+            {roomId ? null : (
+              <button
+                onClick={() => setOpenCreateRoomModal(true)}
+                style={roomButtonStypes}
+                title="Create a Room"
+              >
+                <i className="fa-solid fa-person-shelter"></i>
+              </button>
+            )}
+            <CreateRoomModal
+              open={openCreateRoomModal}
+              onClose={() => setOpenCreateRoomModal(false)}
+              socket={socket}
+              setRoomId={setRoomId}
+              roomId={roomId}
+            />
+          </>
         )}
       </div>
       <div className={styles["connect-room-panel"]}>
-        <button
-          onClick={() => {
-            const value = joiningRoomId;
-            if (value) {
-              socket.emit("join room", joiningRoomId);
-            }
-          }}
-          style={{ padding: ".5em", backgroundColor: "orange" }}
-        >
-          Connect to:
-        </button>
-        {
-          <input
-            style={{ marginLeft: ".5em" }}
-            type="text"
-            value={joiningRoomId}
-            onChange={(e) => {
-              setJoiningRoomId(e.target.value);
-            }}
-          />
-        }
+        {otherUsers.length > 0 ? null : (
+          <>
+            <button
+              onClick={() => setOpenJoinRoomModal(true)}
+              style={roomButtonStypes}
+              title="Join a Room"
+            >
+              <i className="fa-solid fa-person-booth"></i>
+            </button>
+            <ConnectRoomModal
+              joiningRoomId={joiningRoomId}
+              setJoiningRoomId={setJoiningRoomId}
+              socket={socket}
+              open={openJoinRoomModal}
+              onClose={() => setOpenJoinRoomModal(false)}
+            />
+          </>
+        )}
       </div>
     </>
   );

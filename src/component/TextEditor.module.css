@@ -5,6 +5,7 @@
     width: min(850px, 100%);
     background-color: var(--container-bg-color);   
     border-radius: var(--default-border-radius);
+    box-shadow: 0 0 10px 2px var(--box-shadow-color);
     /* text-align: center; */
     padding: 1em 2em;
     min-height: 1058px;

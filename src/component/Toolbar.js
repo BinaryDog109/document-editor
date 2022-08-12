@@ -13,6 +13,7 @@ import {
   findActualOffsetFromParagraphAt,
   isOneOfParagraphTypes,
 } from "../crdt/utilities";
+import { RoomPanel } from "./RoomPanel";
 
 export const Toolbar = ({ selection }) => {
   const editor = useSlateStatic();
@@ -84,6 +85,8 @@ export const Toolbar = ({ selection }) => {
       >
         Test Button
       </button>
+      <div style={{marginRight: '2em', display: 'flex', gap: '.5em'}}>
+      <RoomPanel /></div>
       <button
         title="Bold"
         id="bold"

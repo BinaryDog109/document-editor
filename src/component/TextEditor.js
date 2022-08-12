@@ -41,6 +41,7 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
     side,
     hasHandshakeCompletedMap,
     leftUser,
+    sethasHandshakeCompletedMap
   } = useWebRTCContext();
 
   const handleMessageFromUpstream = useCallback(
@@ -131,11 +132,15 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
             [side]: null,
           }));
           setCRDTSyncStatus("Channel Established");
+          sethasHandshakeCompletedMap((prev) => ({
+            ...prev,
+            [side]: true,
+          }));
           console.log(`received the crdt data channel from ${side}`);
         }
       });
     }
-  }, [peerConnectionsMap, side, handleMessageFromUpstream]);
+  }, [peerConnectionsMap, side, handleMessageFromUpstream, sethasHandshakeCompletedMap]);
   useEffect(() => {
     if (leftUser) {
       console.log(`In crdt data channel: user ${leftUser} has left`);
@@ -195,7 +200,7 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
       }, [remoteCursorMap])}
       <Toolbar selection={selection} />
       <div className={styles["editable-container"]}>
-        <RoomPanel />
+        
         <ChatBox />
         <div className="sync-panel">
           {bufferModeActivated && (

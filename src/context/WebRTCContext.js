@@ -17,9 +17,9 @@ export const WebRTCContextProvider = ({children}) => {
     const chatId = useMemo(() => {
         return generateChatId(clientSocket.id);
       }, [clientSocket.id]);
-    const { socket, peerConnectionsMap, otherUsers, side, hasHandshakeCompletedMap, leftUser } = useWebRTC(clientSocket)
+    const { socket, peerConnectionsMap, otherUsers, side, hasHandshakeCompletedMap, leftUser, sethasHandshakeCompletedMap } = useWebRTC(clientSocket)
     return (
-        <WebRTCContext.Provider value={{ socket, chatId, peerConnectionsMap, otherUsers, side, hasHandshakeCompletedMap, leftUser }}>
+        <WebRTCContext.Provider value={{ socket, chatId, peerConnectionsMap, otherUsers, side, hasHandshakeCompletedMap, leftUser, sethasHandshakeCompletedMap }}>
             {children}
         </WebRTCContext.Provider>
     )

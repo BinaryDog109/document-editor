@@ -98,17 +98,17 @@ export const useWebRTC = (socket) => {
           [otherUserId]: true,
         }));
         socket.emit("answer received", otherUserId);
-        // console.log(`Sent answer received event to ${otherUserId}`)
+        console.log(`Sent answer received event to ${otherUserId}`)
       });
-      
-      socket.on("answer received", (otherUserId) => {
-        console.log("answer received event received")
-        sethasHandshakeCompletedMap((prev) => ({
-          ...prev,
-          [otherUserId]: true,
-        }));
+      // ! A bug here: the client might never receive this answer received event. Fixed by setting hankshake map after datachannel has been established
+      // socket.on("answer received", (otherUserId) => {
+      //   console.log("answer received event received")
+      //   sethasHandshakeCompletedMap((prev) => ({
+      //     ...prev,
+      //     [otherUserId]: true,
+      //   }));
         
-      }); 
+      // }); 
       socket.on("user left", (leftUser) => {
         console.log(`${leftUser} has left, resetting connection...`);
 
@@ -181,6 +181,7 @@ export const useWebRTC = (socket) => {
     otherUsers,
     side,
     hasHandshakeCompletedMap,
+    sethasHandshakeCompletedMap,
     leftUser,
   };
 };

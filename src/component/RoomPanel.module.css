@@ -1,5 +1,20 @@
-.room-status {
-    margin-bottom: 1em;
+.room-status button {
+    position: relative;
+}
+.room-status button::after {
+    font-family: var(--default-font-family);
+    content: attr(data-current-users-number);
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 1em;
+    height: 1em;
+    color: var(--info-color);;
+    background-color: var(--primary-color);
+    border-radius: 50% 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 .room-status span {
     font-size: 1rem;

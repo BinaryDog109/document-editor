@@ -1,64 +1,52 @@
 .toolbar {
-    padding: 1em 2em;
-    border-radius: var(--default-border-radius);
-    background-color: var(--secondary-color);
-    justify-self: stretch;
-    display: flex;
-    flex-flow: row wrap;
-    justify-content: center;
-    align-items: center;
-    gap: 1em;
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    font-size: .8em;
+  padding: 1em 2em;
+  border-radius: var(--default-border-radius);
+  background-color: var(--secondary-color);
+  justify-self: stretch;
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 1em;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  font-size: 0.8em;
 }
-button {
-    background-color: var(--primary-color);
-    color: white;
-    transition: background-color 250ms;
-    border-radius: var(--default-border-radius);
-    cursor: pointer;
-    border: none;
-    outline: none;
-}
-button:hover, button.active {
-    background-color: var(--body-bg-color);
-}
-.operation-button {
-    width: 2em;
-    height: 2em;
-    display: grid;
-    place-items: center;
 
+.operation-button {
+  width: 2em;
+  height: 2em;
+  display: grid;
+  place-items: center;
 }
 
 select {
-    padding: .5em;
-    border-radius: var(--default-border-radius);
-    outline: 1px solid var(--body-bg-color);
-    font-family: var(--default-font-family);
-    background-color: var(--info-color);
-    color: var(--primary-color);
-    border-width: 0px;
+  padding: 0.5em;
+  border-radius: var(--default-border-radius);
+  outline: 1px solid var(--body-bg-color);
+  font-family: var(--default-font-family);
+  background-color: var(--info-color);
+  color: var(--primary-color);
+  border-width: 0px;
 }
 
 .input-wrapper {
-    display: flex;
-    align-items: center;
-    gap: .5em;
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
 }
 .input-wrapper label {
-    color: #232323
+  color: #232323;
 }
-input[type=color] {
-    width: 1.8em;
-    height: 2.1em;
-    border: none;
-    background-color: transparent;    
-    cursor: pointer;
+input[type="color"] {
+  width: 1.8em;
+  height: 2.1em;
+  border: none;
+  background-color: transparent;
+  cursor: pointer;
 }
-input[type=color]::-webkit-color-swatch {
-    border-radius: calc(1.75em / 2);
-    /* box-shadow: 0 1px 2px 1px var(--primary-color); */
+input[type="color"]::-webkit-color-swatch {
+  border-radius: calc(1.75em / 2);
+  /* box-shadow: 0 1px 2px 1px var(--primary-color); */
 }

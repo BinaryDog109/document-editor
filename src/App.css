@@ -1,10 +1,11 @@
 :root {
-  --body-bg-color: hsl(210, 35%, 35%);
+  --body-bg-color: #f5e8c7;
   --container-bg-color: hsl(100, 100%, 100%);
   --button-hover-color: hsl(0, 0%, 50%);
-  --primary-color: #0099FA;
-  --secondary-color: #EFFAFF;
-  --info-color: #F1F1E6;
+  --primary-color: #ac7088;
+  --secondary-color: #deb6ab;
+  --info-color: #f5e8c7;
+  --box-shadow-color: #c5c5c5;
   --status-disconnected-color: #7c7c7c;
   --status-connecting-color: #007ecc;
   --status-connected-color: #00aa00;
@@ -17,16 +18,35 @@ body {
   font-family: var(--default-font-family);
   background-color: var(--body-bg-color);
   line-height: var(--default-line-height);
-  
 }
 .App {
   display: grid;
   min-height: 100vh;
-  grid-template-rows: auto 1fr
+  grid-template-rows: auto 1fr;
 }
 .grid {
   /* overflow: hidden; */
   display: grid;
   grid-template-rows: auto 1fr;
   place-items: center;
+}
+button {
+  font-family: inherit;
+  background-color: var(--body-bg-color);
+  color: var(--primary-color);
+  transition: background-color 250ms;
+  border-radius: var(--default-border-radius);
+  cursor: pointer;
+  border: none;
+  outline: none;
+  box-shadow: 2px 2px 2px 0px var(--box-shadow-color);
+}
+button:hover,
+button.active {
+  background-color: var(--primary-color);
+  color: white;
+}
+.text-button {
+  padding: .5em 1.5em;
+  font-size: 1rem;
 }
