@@ -33,7 +33,7 @@ export const RemoteCursor = ({ selection, chatId }) => {
           left: cursorRect.left,
           width: "2px",
           height: cursorFontSize || "1.2em",
-          backgroundColor: "green",
+          backgroundColor: "var(--primary-color)",
           pointerEvents: "none",
         }}
       ></span>

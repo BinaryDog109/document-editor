@@ -22,7 +22,7 @@ export const CreateRoomModal = ({
             <h2>Room created!</h2>
             <p>Please share this ID with your firends/coleagues!</p>
             <CopyToClipboard text={roomId}
-          onCopy={() => setCopied(true)}>
+          onCopy={() => {setCopied(true); onClose()}}>
             <h3
             className="button"
               style={{

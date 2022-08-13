@@ -14,7 +14,7 @@ export function useRenderElement(editor) {
     return ["image"].includes(element.type) || isVoid(element);
   };
 
-  return { renderElement, renderLeaf, onKeyDown: onKeyDown(editor) };
+  return { renderElement, renderLeaf };
 }
 function renderLeaf(props) {
   const { leaf, children, attributes } = props;
@@ -107,14 +107,4 @@ function renderElement(props) {
   }
 }
 
-function onKeyDown(editor) {
-  return (event) => {
-    if (isHotkey("mod+b", event)) {
-      toggleStyle(editor, "bold");
-    } else if (isHotkey("mod+i", event)) {
-      toggleStyle(editor, "italic");
-    } else if (isHotkey("mod+u", event)) {
-      toggleStyle(editor, "underline");
-    }
-  };
-}
+

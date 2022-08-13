@@ -7,7 +7,6 @@ import { TextEditor } from "./component/TextEditor";
 function App() {
   const [document, updateDocument] = useState(defaultDocument);
   const editorRef = useRef(null)
-  console.log("App renders")
   return (
     <div className="App">
       <Navbar />

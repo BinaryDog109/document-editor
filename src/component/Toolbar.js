@@ -15,7 +15,12 @@ import {
 } from "../crdt/utilities";
 import { RoomPanel } from "./RoomPanel";
 
-export const Toolbar = ({ selection }) => {
+export const Toolbar = ({
+  selection,
+  CRDTSyncStatus,
+  bufferModeActivated,
+  setBufferModeActivated,
+}) => {
   const editor = useSlateStatic();
 
   // ==================
@@ -33,7 +38,8 @@ export const Toolbar = ({ selection }) => {
   };
   return (
     <div className={styles.toolbar}>
-      <button style={{display: 'none'}}
+      <button
+        style={{ display: "none" }}
         onMouseDown={() => {
           try {
             // findActualOffsetFromParagraphAt(editor, {
@@ -64,7 +70,7 @@ export const Toolbar = ({ selection }) => {
               // };
               // editor.apply(op3);
             });
-            
+
             // const op = {
             //   type: "merge_node",
             //   path: [1],
@@ -85,8 +91,22 @@ export const Toolbar = ({ selection }) => {
       >
         Test Button
       </button>
-      <div style={{marginRight: '2em', display: 'flex', gap: '.5em'}}>
-      <RoomPanel /></div>
+      <span
+        style={{
+          backgroundColor: "var(--info-color)",
+          color: "var(--primary-color)",
+          borderRadius: "1em",
+          padding: "0.5em",
+        }}
+      >
+        {CRDTSyncStatus}
+      </span>
+      <div style={{ marginRight: "2em", display: "flex", gap: ".5em" }}>
+        <RoomPanel
+          bufferModeActivated={ bufferModeActivated }
+          setBufferModeActivated={setBufferModeActivated}
+        />
+      </div>
       <button
         title="Bold"
         id="bold"

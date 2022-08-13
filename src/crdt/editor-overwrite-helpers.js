@@ -75,7 +75,7 @@ export function overwriteOnChange(editor) {
     console.log({ readyCRDTOps });
 
     if (crdtOps.length > 0) {
-      if (editor.unbuffered) {
+      if (editor.unbuffered && editor.chatId) {
         const dataChannelMapKeys = Object.keys(editor.dataChannelMap);
         // Send all previously buffered operations first
         if (editor.crdtOpBuffer && editor.crdtOpBuffer.length > 0) {          

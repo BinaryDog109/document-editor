@@ -1,8 +1,7 @@
 // Import the Slate editor factory.
 import styles from "./TextEditor.module.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createEditor, Editor, Node, Range } from "slate";
-import { ReactEditor } from "slate-react";
+import { createEditor } from "slate";
 
 import vc from "vectorclock";
 
@@ -13,25 +12,27 @@ import { useRenderElement } from "../hooks/useRenderElement";
 import { useSelection } from "../hooks/useSelection";
 import { Toolbar } from "./Toolbar";
 import { LinkUpdateCard } from "./LinkUpdateCard";
-import { detectLinkText, isOnLinkNode } from "../utility/EditorStyleUtils";
+import {
+  detectLinkText,
+  isOnLinkNode,
+  toggleStyle,
+} from "../utility/EditorStyleUtils";
 import { ChatBox } from "./ChatBox";
-import { RoomPanel } from "./RoomPanel";
 import { CRDTify } from "../crdt/JSONCRDT";
 import { useWebRTCContext } from "../hooks/useWebRTCContext";
 import { executeCausallyRemoteOperation } from "../crdt/causal-order-helpers";
 import { RemoteCursor } from "./RemoteCursor";
+import isHotkey from "is-hotkey";
 
 export const TextEditor = ({ document, onChange, editorRef }) => {
   // const editor = useMemo(() => withReact(createEditor()), []);
   const [editor] = useState(() => withReact(createEditor()));
-  const { renderElement, renderLeaf, onKeyDown } = useRenderElement(editor);
+  const { renderElement, renderLeaf } = useRenderElement(editor);
   const [prevSelection, selection, setSelection] = useSelection(editor);
   const [dataChannelMap, setDataChannelMap] = useState({});
   const [remoteCursorMap, setRemoteCursorMap] = useState({});
-  const [CRDTSyncStatus, setCRDTSyncStatus] = useState("Not connected");
-  const [bufferModeActivated, setBufferModeActivated] = useState(true);
-  const [remoteSelection, setRemoteSelection] = useState(null);
-  
+  const [CRDTSyncStatus, setCRDTSyncStatus] = useState("Offline");
+  const [bufferModeActivated, setBufferModeActivated] = useState(false);
 
   const {
     socket,
@@ -41,22 +42,23 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
     side,
     hasHandshakeCompletedMap,
     leftUser,
-    sethasHandshakeCompletedMap
+    sethasHandshakeCompletedMap,
   } = useWebRTCContext();
 
   const handleMessageFromUpstream = useCallback(
     (event) => {
-      setCRDTSyncStatus("Received Ops");
+      setCRDTSyncStatus("Received remote changes");
       const crdtOp = JSON.parse(event.data);
       executeCausallyRemoteOperation(editor, crdtOp, editor.causalOrderQueue);
     },
     [editor]
   );
-  const handleSendCRDTOperationJson = (e) => {
+  // Send buffered operations
+  const handleSendCRDTOperationJson = () => {
     const dataChannelMapKeys = Object.keys(dataChannelMap);
     if (!dataChannelMapKeys.length) return;
     try {
-      setCRDTSyncStatus("Sending...");
+      setCRDTSyncStatus("Sending changes...");
 
       const buffer = editor.crdtOpBuffer;
       while (buffer.length > 0) {
@@ -73,28 +75,32 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
       }
 
       console.log("crdt ops sent");
-      setCRDTSyncStatus("Sent");
+      setCRDTSyncStatus("Changes sent");
     } catch (error) {
-      setCRDTSyncStatus("Error in sending operation");
+      setCRDTSyncStatus("Error in sending changes");
       console.log("Error in handleSend: ", error);
     }
   };
-
+  // Attach buffer mode information to the editor
   useEffect(() => {
-    ReactEditor.focus(editor);
-  }, [editor]);
+    editor.unbuffered = !bufferModeActivated;
+  }, [editor, bufferModeActivated]);
+  // Run once when launched. Attach remote cursor map to the editor and make CRDTs out of it.
   useEffect(() => {
     socket.on("connect", () => {
       editor.setRemoteCursorMap = setRemoteCursorMap;
       CRDTify(editor, socket.id);
     });
   }, [socket, editor]);
+  // Attach chatId when available
   useEffect(() => {
     if (chatId) editor.chatId = chatId;
   }, [chatId, editor]);
+  // Attach and refresh dataChannelMap to the editor
   useEffect(() => {
     editor.dataChannelMap = dataChannelMap;
   }, [editor, dataChannelMap]);
+  // Controls operation data channel creating and receiving
   useEffect(() => {
     const peerConnectionsMapKeys = Object.keys(peerConnectionsMap);
     if (!side || !peerConnectionsMapKeys.length) {
@@ -106,7 +112,7 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
       peerConnectionsMapKeys.forEach((otherUserId) => {
         const dataChannel =
           peerConnectionsMap[otherUserId].createDataChannel("crdtChannel");
-        setCRDTSyncStatus("Channel Created");
+
         dataChannel.onmessage = handleMessageFromUpstream;
         setDataChannelMap((prev) => ({
           ...prev,
@@ -131,7 +137,7 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
             ...prev,
             [side]: null,
           }));
-          setCRDTSyncStatus("Channel Established");
+
           sethasHandshakeCompletedMap((prev) => ({
             ...prev,
             [side]: true,
@@ -140,7 +146,21 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
         }
       });
     }
-  }, [peerConnectionsMap, side, handleMessageFromUpstream, sethasHandshakeCompletedMap]);
+  }, [
+    peerConnectionsMap,
+    side,
+    handleMessageFromUpstream,
+    sethasHandshakeCompletedMap,
+  ]);
+  // Controls the status bar
+  useEffect(() => {
+    if (editor.chatId)
+      bufferModeActivated
+        ? setCRDTSyncStatus("Ctrl+Enter to send changes")
+        : setCRDTSyncStatus("Type to send changes");
+    else setCRDTSyncStatus("Offline");
+  }, [bufferModeActivated, editor.chatId]);
+  // Controls what happens when a user left
   useEffect(() => {
     if (leftUser) {
       console.log(`In crdt data channel: user ${leftUser} has left`);
@@ -150,7 +170,6 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
         delete copy[leftUser];
         return copy;
       });
-      setRemoteSelection(null);
       setRemoteCursorMap((prev) => {
         const copy = { ...prev };
         delete copy[leftUser];
@@ -169,6 +188,19 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
     },
     [onChange, setSelection, editor]
   );
+  function onKeyDown(editor) {
+    return (event) => {
+      if (isHotkey("mod+b", event)) {
+        toggleStyle(editor, "bold");
+      } else if (isHotkey("mod+i", event)) {
+        toggleStyle(editor, "italic");
+      } else if (isHotkey("mod+u", event)) {
+        toggleStyle(editor, "underline");
+      } else if (isHotkey("mod+enter", event)) {
+        handleSendCRDTOperationJson();
+      }
+    };
+  }
   // If when we edit the link on the card the selection loses, we still remember the previous one.
   // However, when I tested it, the selection does not lose but the cursor is gone.
   const linkSelection =
@@ -195,35 +227,26 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
           const entry = remoteCursorMap[otherUserId];
           if (!entry) return null;
           const { selection, chatId } = entry;
-          return <RemoteCursor key={chatId} selection={selection} chatId={chatId}/>;
+          return (
+            <RemoteCursor key={chatId} selection={selection} chatId={chatId} />
+          );
         });
       }, [remoteCursorMap])}
-      <Toolbar selection={selection} />
+      <Toolbar
+        selection={selection}
+        CRDTSyncStatus={CRDTSyncStatus}
+        bufferModeActivated={bufferModeActivated}
+        setBufferModeActivated={setBufferModeActivated}
+      />
       <div className={styles["editable-container"]}>
-        
         <ChatBox />
-        <div className="sync-panel">
-          {bufferModeActivated && (
-            <button onClick={handleSendCRDTOperationJson}>Sync</button>
-          )}{" "}
-          <span>{CRDTSyncStatus}</span>
-        </div>
-        <div>
-          <button
-            onClick={() => {
-              setBufferModeActivated((prev) => !prev);
-              editor.unbuffered = !editor.unbuffered;
-            }}
-          >
-            {bufferModeActivated ? "Buffered" : "Unbuffered"}
-          </button>
-        </div>
-
         <Editable
+          readOnly={editor.chatId ? false : true}
           renderElement={renderElement}
           renderLeaf={renderLeaf}
-          onKeyDown={onKeyDown}
+          onKeyDown={onKeyDown(editor)}
         />
+        {!editor.chatId && <div className="instructions">Welcome!</div>}
       </div>
     </Slate>
   );
