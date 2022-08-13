@@ -196,7 +196,7 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
         toggleStyle(editor, "italic");
       } else if (isHotkey("mod+u", event)) {
         toggleStyle(editor, "underline");
-      } else if (isHotkey("mod+enter", event)) {
+      } else if (isHotkey("mod+enter", event) && bufferModeActivated) {
         handleSendCRDTOperationJson();
       }
     };
