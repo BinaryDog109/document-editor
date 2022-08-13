@@ -129,7 +129,17 @@ export const ChatBox = () => {
           value={text}
           onKeyUp={handleSend}
           onChange={handleChange}
-          style={{ padding: ".5em", fontSize: "1rem" }}
+          style={{
+            padding: ".2em",
+            fontSize: "1rem",
+            backgroundColor: "var(--info-color)",
+            outline: "none",
+            border: "none",
+            borderRadius: 'var(--default-border-radius)',
+            color: 'var(--primary-color)',
+            fontFamily: 'inherit',
+            boxShadow: '0 0 1px 1px var(--box-shadow-color)'
+          }}
           placeholder={chatId}
           type="text"
         />
