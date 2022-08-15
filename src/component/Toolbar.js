@@ -39,51 +39,20 @@ export const Toolbar = ({
   return (
     <div className={styles.toolbar}>
       <button
-        style={{ display: "none" }}
+        // style={{ display: "none" }}
         onMouseDown={() => {
           try {
-            // findActualOffsetFromParagraphAt(editor, {
-            //   path: [0],
-            //   offset: 2
-            // })
             Editor.withoutNormalizing(editor, () => {
               const op1 = {
                 // before splitting text path and offset in this text node
-                path: [0, 4],
-                position: 2,
+                path: [0],
+                position: 1,
                 properties: {},
                 type: "split_node",
               };
-              const op2 = {
-                node: { text: "a", bold: true },
-                path: [0, 5],
-                type: "insert_node",
-              };
 
               editor.apply(op1);
-              editor.apply(op2);
-              // const op3 = {
-              //   offset: 0,
-              //   path: [0, 1],
-              //   text: "a",
-              //   type: "remove_text",
-              // };
-              // editor.apply(op3);
             });
-
-            // const op = {
-            //   type: "merge_node",
-            //   path: [1],
-            //   position: 1,
-            // };
-            // const op2 = {
-            //   path: [1],
-            //   position: 1,
-            //   properties: {},
-            //   type: "merge_node",
-            // };
-            // editor.apply(op);
-            // editor.apply(op2);
           } catch (error) {
             console.log(error.message);
           }

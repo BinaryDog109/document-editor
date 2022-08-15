@@ -246,8 +246,10 @@ export function mapOperationsFromSlate(editor, slateOps) {
       const crdtOp = new CRDTOperation(slateOp.type);
       crdtOp.node = paragraph;
       crdtOp.slateTargetPath = [...slateOp.path];
+      // const [oldParagraph] = findParagraphNodeEntryAt(editor, slateOp.path)
       crdtOp.type = "insert_paragraph";
       crdtOp.peerId = editor.peerId;
+      
 
       crdtOps.push(crdtOp);
     }

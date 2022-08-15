@@ -33,7 +33,7 @@ export function overwriteInsertBreak(editor) {
     if (selection) {
       const [paragraph, paragraphPath] = findParagraphNodeEntryAt(
         editor,
-        selection
+        Range.end(selection)
       );
       const paragraphTextNodes = Node.texts(paragraph);
 
