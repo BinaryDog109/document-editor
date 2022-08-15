@@ -1,5 +1,5 @@
 import cuid from "cuid";
-import { Editor, Element, Transforms } from "slate";
+import { Editor, Element, Node, Range, Transforms } from "slate";
 import { RGA } from "./JSONCRDT";
 import vc from "vectorclock";
 import {
@@ -7,7 +7,11 @@ import {
   executeUpstreamCRDTOps,
   mapOperationsFromSlate,
 } from "./upstream-slate-helpers";
-import { isOneOfParagraphTypes } from "./utilities";
+import {
+  findActualOffsetFromParagraphAt,
+  findParagraphNodeEntryAt,
+  isOneOfParagraphTypes,
+} from "./utilities";
 import { CRDTOperation } from "./CRDTOperation";
 
 export function overwriteNormaliseNode(editor) {
@@ -23,26 +27,41 @@ export function overwriteInsertBreak(editor) {
   // Overwrite insertBreak behaviour
   editor.insertBreak = () => {
     const { selection } = editor;
+
     if (selection) {
-      const [nodeEntry] = Editor.nodes(editor, {
-        match: (n) =>
-          !Editor.isEditor(n) &&
-          Element.isElement(n) &&
-          isOneOfParagraphTypes(n),
-      });
-      // console.log({nodeEntry})
-      if (nodeEntry) {
-        const id = cuid();
-        const newParagraph = {
-          children: [{ text: "" }],
-          type: nodeEntry[0].type,
-          id,
-          rga: new RGA(),
-        };
-        Transforms.insertNodes(editor, newParagraph);
-        editor.paragraphRGAMap &&
-          editor.paragraphRGAMap.set(id, newParagraph.rga);
-        return;
+      const [paragraph, paragraphPath] = findParagraphNodeEntryAt(
+        editor,
+        selection
+      );
+      const paragraphTextNodes = Node.texts(paragraph);
+
+      const selectionEnd = Range.end(selection);
+      const offset = findActualOffsetFromParagraphAt(editor, selectionEnd);
+      let textLen = 0;
+      for (let textNode of paragraphTextNodes) {
+        textLen += textNode[0].text.length;
+      }
+      // Test if the end of selection is at the end of a paragraph
+      if (offset === textLen || offset === 0) {
+        const [nodeEntry] = Editor.nodes(editor, {
+          match: (n) =>
+            !Editor.isEditor(n) &&
+            Element.isElement(n) &&
+            isOneOfParagraphTypes(n),
+        });
+        if (nodeEntry) {
+          const id = cuid();
+          const newParagraph = {
+            children: [{ text: "" }],
+            type: nodeEntry[0].type,
+            id,
+            rga: new RGA(),
+          };
+          Transforms.insertNodes(editor, newParagraph);
+          editor.paragraphRGAMap &&
+            editor.paragraphRGAMap.set(id, newParagraph.rga);
+          return;
+        }
       }
     }
     insertBreak();
@@ -67,7 +86,7 @@ export function overwriteOnChange(editor) {
       const selection = editor.selection;
       const selectionCRDTOp = new CRDTOperation("set_remote_selection");
       selectionCRDTOp.selection = selection;
-      selectionCRDTOp.chatId = editor.chatId
+      selectionCRDTOp.chatId = editor.chatId;
       selectionCRDTOp.peerId = editor.peerId;
       readyCRDTOps.push(selectionCRDTOp);
     }
@@ -78,8 +97,8 @@ export function overwriteOnChange(editor) {
       if (editor.unbuffered && editor.chatId) {
         const dataChannelMapKeys = Object.keys(editor.dataChannelMap);
         // Send all previously buffered operations first
-        if (editor.crdtOpBuffer && editor.crdtOpBuffer.length > 0) {          
-          const buffer = editor.crdtOpBuffer
+        if (editor.crdtOpBuffer && editor.crdtOpBuffer.length > 0) {
+          const buffer = editor.crdtOpBuffer;
           while (buffer.length > 0) {
             const op = buffer.shift();
             // Increment and send the local vector clock every time we send an operation
@@ -93,7 +112,7 @@ export function overwriteOnChange(editor) {
             });
           }
         }
-        
+
         readyCRDTOps.forEach((op) => {
           // Increment and send the local vector clock every time we send an operation
           vc.increment(editor.vectorClock, editor.peerId);

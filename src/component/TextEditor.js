@@ -241,12 +241,12 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
       <div className={styles["editable-container"]}>
         <ChatBox />
         <Editable
-          readOnly={editor.chatId ? false : true}
+          // readOnly={editor.chatId ? false : true}
           renderElement={renderElement}
           renderLeaf={renderLeaf}
           onKeyDown={onKeyDown(editor)}
         />
-        {!editor.chatId && <div className="instructions">Welcome!</div>}
+        {/* {!editor.chatId && <div className="instructions">Welcome!</div>} */}
       </div>
     </Slate>
   );

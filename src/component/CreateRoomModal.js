@@ -40,9 +40,9 @@ export const CreateRoomModal = ({
           <>
             <h2>Create a room?</h2>
             <p>
-              When you hit the button below, an id for the room will be
+              When you hit the button below, a unique ID for the room will be
               generated and displayed. Please share this id with your
-              firends/coleagues!
+              firends/coleagues (Click to copy)!
             </p>
             <button
               className="text-button"
