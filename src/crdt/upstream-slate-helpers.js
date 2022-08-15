@@ -3,6 +3,7 @@ import { CharacterNode } from "./CharacterNode";
 import { CRDTOperation } from "./CRDTOperation";
 import {
   findActualOffsetFromParagraphAt,
+  findParagraphIdAt,
   findParagraphNodeEntryAt,
   isOneOfParagraphTypes,
   isParagraphRGAEmpty,
@@ -48,7 +49,7 @@ export function executeUpstreamCRDTOps(editor, crdtOps) {
         Editor.isEnd(editor, Range.end(editor.selection), path) &&
         Node.string(paragraphNode).length === index + 1
       ) {
-        console.log("insert to end!")
+        console.log("insert to end!");
         rga.list.insert(nodeForLinkedList);
         insertedLinkedNode = rga.list.getTailNode();
         insertAfterNode = rga.list.getTailNode().prev;
@@ -120,7 +121,11 @@ export function mapOperationsFromSlate(editor, slateOps) {
     if (slateOp.isRemote) {
       continue;
     }
-    if (slateOp.type === "insert_text" || slateOp.type === "remove_text" || (slateOp.type === "remove_node" && slateOp.node.text)) {
+    if (
+      slateOp.type === "insert_text" ||
+      slateOp.type === "remove_text" ||
+      (slateOp.type === "remove_node" && slateOp.node.text)
+    ) {
       const slatePath = [...slateOp.path];
 
       const [paragraph, paragraphPath] = findParagraphNodeEntryAt(
@@ -136,7 +141,6 @@ export function mapOperationsFromSlate(editor, slateOps) {
         offset: slateOp.offset,
       });
 
-      
       if (slateOp.type === "insert_text") {
         const chars = slateOp.text.split("");
         chars.forEach((char) => {
@@ -152,16 +156,18 @@ export function mapOperationsFromSlate(editor, slateOps) {
           crdtOp.paragraphId = paragraphId;
           crdtOps.push(crdtOp);
         });
-      } else if (slateOp.type === "remove_text" || (slateOp.type === "remove_node" && slateOp.node.text)) {
-        let chars
-        let crdtOpType = "remove_text"
+      } else if (
+        slateOp.type === "remove_text" ||
+        (slateOp.type === "remove_node" && slateOp.node.text)
+      ) {
+        let chars;
+        let crdtOpType = "remove_text";
         // If the operation is of type "remote_node"
         if (slateOp.node) {
           chars = slateOp.node.text.split("");
         }
         // If the operation is of type "remote_text"
-        else
-          chars = slateOp.text.split("");
+        else chars = slateOp.text.split("");
         /**
        * offset: 2
          path: (2) [0, 0]
@@ -189,7 +195,7 @@ export function mapOperationsFromSlate(editor, slateOps) {
             );
             firstCharOffset = actualOffset;
           }
-          
+
           // eslint-disable-next-line no-loop-func
           chars.forEach((char) => {
             console.log({ firstCharOffset, char });
@@ -209,11 +215,28 @@ export function mapOperationsFromSlate(editor, slateOps) {
 
           continue;
         }
+        // If deleting a marked node which is at the end of a paragraph
+        if (
+          slateOps.length === 3 &&
+          slateOps.find(
+            (op) => op.type === "remove_node" && op.node.text === ""
+          )
+        ) {
+          const insertTextOp = slateOps.find((op) => op.type === "insert_text");
+          actualOffset = findActualOffsetFromParagraphAt(
+            editor,
+            {
+              path: slatePath,
+              offset: slateOp.offset,
+            },
+            insertTextOp.offset
+          );
+        }
         // Find the offset of the first char, then increase it by one every char in every remove_text/node node
         if (firstCharOffset === null) {
-          firstCharOffset = actualOffset
+          firstCharOffset = actualOffset;
         }
-
+        console.log({ actualOffset, slateOps });
         // eslint-disable-next-line no-loop-func
         chars.forEach((char) => {
           const nodeToBeDeleted = rga.findRGANodeAt(firstCharOffset);
@@ -246,10 +269,14 @@ export function mapOperationsFromSlate(editor, slateOps) {
       const crdtOp = new CRDTOperation(slateOp.type);
       crdtOp.node = paragraph;
       crdtOp.slateTargetPath = [...slateOp.path];
-      // const [oldParagraph] = findParagraphNodeEntryAt(editor, slateOp.path)
+      // Find the set_selection op
+      const setSelectionOp = slateOps.find((op) => op.type === "set_selection");
+      const oldSelection = setSelectionOp.properties;
+      const [oldStart] = Range.edges(oldSelection);
+      const oldParagraph = findParagraphIdAt(editor, oldSelection);
+      console.log({ oldSelection });
       crdtOp.type = "insert_paragraph";
       crdtOp.peerId = editor.peerId;
-      
 
       crdtOps.push(crdtOp);
     }
@@ -312,8 +339,11 @@ export function mapOperationsFromSlate(editor, slateOps) {
         slatePath
       );
       // If inserting marked node at the beginning of a paragraph
-      if (paragraph.children.length === 1 && paragraph.children[0].text === slateOp.node.text) {
-        slatePath[slatePath.length - 1] = 0
+      if (
+        paragraph.children.length === 1 &&
+        paragraph.children[0].text === slateOp.node.text
+      ) {
+        slatePath[slatePath.length - 1] = 0;
       }
       const paragraphId = paragraph.id;
       const actualOffset = findActualOffsetFromParagraphAt(editor, {

@@ -68,6 +68,7 @@ export class RGA {
     let position = 0;
 
     while (position < index) {
+      // console.log({current, position, index})
       current = current.next;
       // Skip if it has been deleted
       if (current.data.isTombStoned) {

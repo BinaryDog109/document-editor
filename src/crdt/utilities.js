@@ -136,7 +136,7 @@ export const isOneOfParagraphTypes = (node) => {
   );
 };
 
-export const findParagraphIdAt = (editor, paragraphId, path) => {
+export const findParagraphIdAt = (editor, path) => {
   const [paragraph] = Editor.above(editor, {
     match: (n) => isOneOfParagraphTypes(n),
     at: path,
@@ -193,7 +193,7 @@ export const findActualOffsetFromParagraphAt = (
   let offset = point.offset;
   let currentNodeLen = 0;
   for (const [node, path] of generator) {
-    // console.log({node, path, compareTo: point.path})
+    console.log({node, path, compareTo: Path.compare(path, [point.path[point.path.length - 1]]), offset})
     // The path is relative, so we just compare the last number of a path
     // If the text node is before our text node
     if (Path.compare(path, [point.path[point.path.length - 1]]) === -1) {
