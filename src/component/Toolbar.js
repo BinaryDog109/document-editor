@@ -14,6 +14,8 @@ import {
   isOneOfParagraphTypes,
 } from "../crdt/utilities";
 import { RoomPanel } from "./RoomPanel";
+import { RGA } from "../crdt/JSONCRDT";
+import cuid from "cuid";
 
 export const Toolbar = ({
   selection,
@@ -39,19 +41,33 @@ export const Toolbar = ({
   return (
     <div className={styles.toolbar}>
       <button
-        // style={{ display: "none" }}
+        style={{ display: "none" }}
         onMouseDown={() => {
           try {
             Editor.withoutNormalizing(editor, () => {
+              // Handling the text node properties
               const op1 = {
-                // before splitting text path and offset in this text node
-                path: [0],
-                position: 1,
+                path: [0, 0],
+                position: 2,
                 properties: {},
                 type: "split_node",
               };
+              // Handling the previous paragraph properties
+              const op2 = {
+                path: [0],
+                position: 1,
+                type: "split_node",
+              };
+              // Handling the new paragraph properties
+              const op3 = {
+                newProperties: { id: cuid(), rga: new RGA() },
+                path: [1],
+                type: "set_node",
+              };
 
               editor.apply(op1);
+              editor.apply(op2);
+              editor.apply(op3);
             });
           } catch (error) {
             console.log(error.message);
@@ -72,7 +88,7 @@ export const Toolbar = ({
       </span>
       <div style={{ marginRight: "2em", display: "flex", gap: ".5em" }}>
         <RoomPanel
-          bufferModeActivated={ bufferModeActivated }
+          bufferModeActivated={bufferModeActivated}
           setBufferModeActivated={setBufferModeActivated}
         />
       </div>

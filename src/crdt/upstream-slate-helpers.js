@@ -270,11 +270,11 @@ export function mapOperationsFromSlate(editor, slateOps) {
       crdtOp.node = paragraph;
       crdtOp.slateTargetPath = [...slateOp.path];
       // Find the set_selection op
-      const setSelectionOp = slateOps.find((op) => op.type === "set_selection");
-      const oldSelection = setSelectionOp.properties;
-      const [oldStart] = Range.edges(oldSelection);
-      const oldParagraph = findParagraphIdAt(editor, oldSelection);
-      console.log({ oldSelection });
+      // const setSelectionOp = slateOps.find((op) => op.type === "set_selection");
+      // const oldSelection = setSelectionOp.properties;
+      // const oldParagraph = findParagraphIdAt(editor, oldSelection[0]);
+      // TODO: Attach old paragraph ID
+      // console.log({ oldParagraph });
       crdtOp.type = "insert_paragraph";
       crdtOp.peerId = editor.peerId;
 
@@ -364,6 +364,15 @@ export function mapOperationsFromSlate(editor, slateOps) {
       crdtOp.markProperties = markProperties;
       crdtOps.push(crdtOp);
       // console.log({ crdtOp });
+    }
+    else if (slateOp.type === "insert_break") {
+      const crdtOp = new CRDTOperation(slateOp.type)
+      crdtOp.peerId = editor.peerId;
+      crdtOp.oldParagraphId = slateOp.oldParagraphId
+      crdtOp.newParagraphId = slateOp.newParagraphId
+      crdtOp.insertAfterNodeId = slateOp.insertAfterNodeId
+      crdtOp.insertedCharacters = slateOp.insertedCharacters
+      crdtOps.push(crdtOp)
     }
   }
 

@@ -8,6 +8,8 @@ import {
   mapOperationsFromSlate,
 } from "./upstream-slate-helpers";
 import {
+  appendRGAList,
+  deleteRGANodesUntil,
   findActualOffsetFromParagraphAt,
   findParagraphNodeEntryAt,
   isOneOfParagraphTypes,
@@ -73,47 +75,34 @@ export function overwriteInsertBreak(editor) {
         const newRGAHead = previousRGA.findRGANodeAt(offset);
         insertBreak();
         const newSelection = editor.selection;
-        const [newParagraph, paragraphPath] = findParagraphNodeEntryAt(
+        const [newParagraph, newParagraphPath] = findParagraphNodeEntryAt(
           editor,
           newSelection
         );
         const newRGA = new RGA();
-        const newCharMap = newRGA.chracterLinkedNodeMap;
 
         // Insert non-tombstoned rga nodes to the new RGA linked list
-        let current = newRGAHead;
-        while (current != null) {
-          if (!current.data.isTombStoned) {
-            // increase local vector clock
-            vc.increment(editor.vectorClock, editor.peerId);
-            const characterNode = new CharacterNode(
-              current.data.char,
-              editor.peerId
-            );
-            setCharacterId(characterNode, editor);
-            newRGA.list.insert(characterNode);
-            newCharMap.set(characterNode.id, current);
-          }
-          current = current.next;
-        }
+        const insertedCharacters = appendRGAList(newRGA, newRGAHead, editor, true)
 
         // Remove splitted rga nodes in previous linked list
-        let removeStop = newRGAHead.prev;
-        let deletedLinkedNode = previousRGA.list.tail;
-        while (deletedLinkedNode !== removeStop) {
-          // Mark nodes after the splitting position to be deleted
-          if (!deletedLinkedNode.data.isTombStoned) {
-            deletedLinkedNode.data.isTombStoned = true;
-            previousRGA.list.tombStoneCount++;
-          }
+        const removeStop = newRGAHead.prev;
+        deleteRGANodesUntil(removeStop, previousRGA)
 
-          deletedLinkedNode = deletedLinkedNode.prev;
+        const newId = cuid()
+        const customOp = {
+          type: 'insert_break',
+          oldParagraphId: paragraph.id,
+          newParagraphId: newId,
+          insertAfterNodeId: removeStop.data.id,
+          // send inserted characters in order to keep the same character ids on other parties
+          insertedCharacters
         }
+        editor.apply(customOp)
 
         Transforms.setNodes(
           editor,
-          { id: cuid(), rga: newRGA },
-          { at: paragraphPath }
+          { id: newId, rga: newRGA },
+          { at: newParagraphPath }
         );
         return;
       }

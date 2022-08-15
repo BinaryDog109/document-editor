@@ -1,4 +1,6 @@
 import { Editor, Node, Path } from "slate";
+import { CharacterNode } from "./CharacterNode";
+import vc from "vectorclock";
 
 // Helper function that helps generate all unique keys from two clocks
 export function allKeys(a, b) {
@@ -103,20 +105,24 @@ export function findTextPathFromActualOffsetOfParagraphPath(
   let textPath = [...paragraphPath, 0]; // From the first text node
   const textsGenerator = Node.texts(paragraphNode);
   for (let [textNode, relativePath] of textsGenerator) {
-    console.log("looping through text nodes: ", offsetMark, {textNodeText: textNode.text}, relativePath);
+    console.log(
+      "looping through text nodes: ",
+      offsetMark,
+      { textNodeText: textNode.text },
+      relativePath
+    );
     const textLength = textNode.text.length;
     if (offsetMark - textLength > 0) {
       offsetMark -= textLength;
       continue;
     } else if (offsetMark === textLength && isDeletingNode) {
       // Only when deleting a node, do we need to return the next text node if offsetMark === textLength
-      offsetMark -= textLength
+      offsetMark -= textLength;
       textPath.pop();
       textPath = textPath.concat(relativePath);
-      textPath[textPath.length - 1] += 1
-      return [textPath, offsetMark]
-    }
-     else {
+      textPath[textPath.length - 1] += 1;
+      return [textPath, offsetMark];
+    } else {
       // Found our text node and index
       textPath.pop();
       textPath = textPath.concat(relativePath);
@@ -168,13 +174,12 @@ export const findParagraphNodeEntryAt = (editor, path) => {
 
 export function executeSlateOp(editor, slateOp) {
   if (slateOp.group) {
-    Editor.withoutNormalizing(editor, ()=>{
-      slateOp.ops.forEach(op => {
-        editor.apply(op)
-      })
-    })
-  }
-  else if (slateOp.withoutNorm) {
+    Editor.withoutNormalizing(editor, () => {
+      slateOp.ops.forEach((op) => {
+        editor.apply(op);
+      });
+    });
+  } else if (slateOp.withoutNorm) {
     Editor.withoutNormalizing(editor, () => {
       editor.apply(slateOp);
     });
@@ -193,7 +198,7 @@ export const findActualOffsetFromParagraphAt = (
   let offset = point.offset;
   let currentNodeLen = 0;
   for (const [node, path] of generator) {
-    console.log({node, path, compareTo: Path.compare(path, [point.path[point.path.length - 1]]), offset})
+    // console.log({node, path, compareTo: Path.compare(path, [point.path[point.path.length - 1]]), offset})
     // The path is relative, so we just compare the last number of a path
     // If the text node is before our text node
     if (Path.compare(path, [point.path[point.path.length - 1]]) === -1) {
@@ -206,4 +211,43 @@ export const findActualOffsetFromParagraphAt = (
     offset += positionAfterMerged;
   }
   return offset;
+};
+
+export const appendRGAList = (
+  rga,
+  newRGAHead,
+  editor,
+  fromLocal,
+  remotePeerId
+) => {
+  const insertedCharacters = []
+  let current = newRGAHead;
+  while (current != null) {
+    if (!current.data.isTombStoned) {
+      if (fromLocal) {
+        // increase local vector clock
+        vc.increment(editor.vectorClock, editor.peerId);
+      }
+      const peerId = fromLocal ? editor.peerId : remotePeerId;
+      const characterNode = new CharacterNode(current.data.char, peerId);
+      setCharacterId(characterNode, editor);
+      rga.list.insert(characterNode);
+      rga.chracterLinkedNodeMap.set(characterNode.id, current);
+      insertedCharacters.push({...characterNode})
+    }
+    current = current.next;
+  }
+  return insertedCharacters
+};
+export const deleteRGANodesUntil = (removeStop, rga) => {
+  let deletedLinkedNode = rga.list.tail;
+  while (deletedLinkedNode !== removeStop) {
+    // Mark nodes after the splitting position to be deleted
+    if (!deletedLinkedNode.data.isTombStoned) {
+      deletedLinkedNode.data.isTombStoned = true;
+      rga.list.tombStoneCount++;
+    }
+
+    deletedLinkedNode = deletedLinkedNode.prev;
+  }
 };

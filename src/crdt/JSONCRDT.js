@@ -21,6 +21,9 @@ import {
   overwriteOnChange,
 } from "./editor-overwrite-helpers";
 import {
+  appendRGAList,
+  deleteRGANodesUntil,
+  executeSlateOp,
   findParagraphEntryFromId,
   findTextPathFromActualOffsetOfParagraphPath,
   isLargerThanForCharacterNode,
@@ -311,14 +314,77 @@ export function executeDownstreamSingleCRDTOp(editor, crdtOp) {
       performance.now()
     );
   } else if (type === "set_remote_selection") {
-    const {selection, chatId, peerId} = crdtOp
-    editor.setRemoteCursorMap(prev => ({
+    const { selection, chatId, peerId } = crdtOp;
+    editor.setRemoteCursorMap((prev) => ({
       ...prev,
       [peerId]: {
         selection,
-        chatId: chatId
-      }
-    }))
+        chatId: chatId,
+      },
+    }));
+  } else if (type === "insert_break") {
+    const { insertAfterNodeId, oldParagraphId, newParagraphId } = crdtOp;
+    // console.log({insertAfterNodeId, oldParagraphId, newParagraphId})
+    const [oldParagraph, oldParagraphPath] = findParagraphEntryFromId(
+      editor,
+      oldParagraphId
+    );
+    /**@type {RGA} */
+    const oldRGA = oldParagraph.rga;
+    // This is a special case: we need to apply slate operations to split the paragraph first, then change the linked list
+    const insertAfterLinkedNode =
+      oldRGA.chracterLinkedNodeMap.get(insertAfterNodeId);
+    const newRGAHead = insertAfterLinkedNode.next;
+    const visibleIndexOfnewRGAHead = oldRGA.findVisibleIndexOf(newRGAHead);
+    const [textPath, textOffset] = findTextPathFromActualOffsetOfParagraphPath(
+      editor,
+      oldParagraphPath,
+      visibleIndexOfnewRGAHead
+    );
+
+    const slateOp = {
+      group: true,
+      ops: [],
+    };
+    const op1 = {
+      path: textPath,
+      position: textOffset,
+      properties: {},
+      type: "split_node",
+      isRemote: true,
+    };
+    const op2 = {
+      path: oldParagraphPath,
+      // Seems to always be 1
+      position: textPath[textPath.length - 1] + 1,
+      type: "split_node",
+      isRemote: true,
+    };
+    const newPath = [...oldParagraphPath];
+    newPath[0] += 1;
+    const op3 = {
+      newProperties: {
+        id: newParagraphId,
+        rga: new RGA(),
+        type: oldParagraph.type,
+      },
+      path: newPath,
+      type: "set_node",
+      isRemote: true,
+    };
+    slateOp.ops.push(op1, op2, op3);
+    executeSlateOp(editor, slateOp);
+    const [newParagraph, newParagraphPath] = findParagraphEntryFromId(
+      editor,
+      newParagraphId
+    );
+
+    const insertedCharacters = crdtOp.insertedCharacters;
+    insertedCharacters.forEach((charNode) => {
+      newParagraph.rga.list.insert(charNode);
+      newParagraph.rga.chracterLinkedNodeMap.set(charNode.id, newParagraph.rga.list.tail)
+    });
+    deleteRGANodesUntil(insertAfterLinkedNode, oldParagraph.rga);
   }
   return crdtOp;
 }
@@ -371,16 +437,16 @@ export function mapSingleOperationFromCRDT(editor, crdtOp) {
           // Added isRemote flag so slatejs onChange wont modify the linked list again
           isRemote: true,
         };
-        const newNodePath = [...textPath]
-        newNodePath[newNodePath.length - 1] += 1
+        const newNodePath = [...textPath];
+        newNodePath[newNodePath.length - 1] += 1;
         const slateOp2 = {
           node: { text: node.char, ...markProperties },
           // Increase one text node ahead because it is going to place the new node there
           path: newNodePath,
           type: "insert_node",
-          isRemote: true
+          isRemote: true,
         };
-        slateOpGroup.ops.push(slateOp1, slateOp2)
+        slateOpGroup.ops.push(slateOp1, slateOp2);
         slateOps.push(slateOpGroup);
       }
     } else {
@@ -407,8 +473,13 @@ export function mapSingleOperationFromCRDT(editor, crdtOp) {
       paragraphId
     );
     const [textPath, actualTextOffset] =
-      findTextPathFromActualOffsetOfParagraphPath(editor, paragraphPath, index, true);
-    console.log({textPath, actualTextOffset})
+      findTextPathFromActualOffsetOfParagraphPath(
+        editor,
+        paragraphPath,
+        index,
+        true
+      );
+    console.log({ textPath, actualTextOffset });
     // let textPath = [...slateTargetPath];
     const textOffset = actualTextOffset;
     // Only deletes it when it exists

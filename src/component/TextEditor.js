@@ -241,12 +241,83 @@ export const TextEditor = ({ document, onChange, editorRef }) => {
       <div className={styles["editable-container"]}>
         <ChatBox />
         <Editable
-          // readOnly={editor.chatId ? false : true}
+          readOnly={editor.chatId ? false : true}
           renderElement={renderElement}
           renderLeaf={renderLeaf}
           onKeyDown={onKeyDown(editor)}
         />
-        {/* {!editor.chatId && <div className="instructions">Welcome!</div>} */}
+        {!editor.chatId && (
+          <div className="instructions">
+            <h1>Hi!</h1>
+            <p style={{ margin: "1em 0" }}>
+              This project presents a collaborative editor made with{" "}
+              <a target="blank" href="https://docs.slatejs.org/">Slate.js</a> and a Sequence
+              Conflict-free Replicated Data Type called{" "}
+              <em>
+                <a target="blank" href="http://csl.skku.edu/papers/jpdc11.pdf">
+                  Replicated Growable Array (RGA)
+                </a>
+                .
+              </em>{" "}
+              The network layer uses{" "}
+              <a target="blank" href="https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API">
+                WebRTC API
+              </a>{" "}
+              to facilitate P2P communication. I also built a{" "}
+              <a target="blank" href="https://bloggeek.me/webrtc-p2p-mesh/">
+                mesh architecture{" "}
+              </a>
+              to enable group editing.
+            </p>
+            <p style={{ margin: "1em 0" }}>
+              While it works fine in one-dimensional editing (i.e., editing on a
+              consecutive paragraph level),{" "}
+              <b>
+                {" "}
+                there might be unexpected results when trying to splitting
+                paragraphs or splitting format text (like bold, italic,
+                underlined text, etc.)
+              </b>
+              . This is due to some inconsistent mapping between the JSON-like
+              structure of Slate.js and one-dimensional focus of the RGA
+              algorithm (😂 It was very challenging to map them perfectly!).
+            </p>
+            <div style={{ margin: "1em 0" }}>
+              Here are some instructions on how to use it:
+              <ul>
+                <li>
+                  Click that <i className="fa-solid fa-person-shelter"></i>{" "}
+                  button to create a room, then share the room ID with your
+                  friends!{" "}
+                </li>
+                <li>
+                  They then can connect to the room by clicking the{" "}
+                  <i className="fa-solid fa-person-booth"></i> button and
+                  pasting the ID.
+                </li>
+                <li>
+                  Don't want others to see your editing immediately? Click the{" "}
+                  <i className="fa-solid fa-eye"></i> button to switch to
+                  privacy mode. <br></br>{" "}
+                  <b>
+                    In the privacy mode, remember to press Ctrl+Enter to send
+                    your editing when ready!
+                  </b>
+                </li>
+                <li>
+                  You can always chat to the other sides using the chat panel at
+                  the right bottom! You are automatically assigned to an ID with
+                  animal emojis. 😸
+                </li>
+              </ul>
+            </div>
+            <p>
+              I handcrafted this RGA data structure & algorithm with much joy and pain. If you
+              are interested in doing the same with Slate.js, I recommend checking out 
+              <a target="blank" href="https://automerge.org/"> Automerge</a> and <a target="blank" href="https://docs.yjs.dev/">Yjs</a> instead!
+            </p>
+          </div>
+        )}
       </div>
     </Slate>
   );
