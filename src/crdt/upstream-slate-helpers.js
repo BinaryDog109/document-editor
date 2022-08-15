@@ -48,6 +48,7 @@ export function executeUpstreamCRDTOps(editor, crdtOps) {
         Editor.isEnd(editor, Range.end(editor.selection), path) &&
         Node.string(paragraphNode).length === index + 1
       ) {
+        console.log("insert to end!")
         rga.list.insert(nodeForLinkedList);
         insertedLinkedNode = rga.list.getTailNode();
         insertAfterNode = rga.list.getTailNode().prev;

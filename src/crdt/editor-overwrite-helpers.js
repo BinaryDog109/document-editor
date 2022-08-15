@@ -11,8 +11,10 @@ import {
   findActualOffsetFromParagraphAt,
   findParagraphNodeEntryAt,
   isOneOfParagraphTypes,
+  setCharacterId,
 } from "./utilities";
 import { CRDTOperation } from "./CRDTOperation";
+import { CharacterNode } from "./CharacterNode";
 
 export function overwriteNormaliseNode(editor) {
   const { normalizeNode } = editor;
@@ -36,6 +38,7 @@ export function overwriteInsertBreak(editor) {
       const paragraphTextNodes = Node.texts(paragraph);
 
       const selectionEnd = Range.end(selection);
+      // offset is the first text after the splitting position
       const offset = findActualOffsetFromParagraphAt(editor, selectionEnd);
       let textLen = 0;
       for (let textNode of paragraphTextNodes) {
@@ -62,6 +65,57 @@ export function overwriteInsertBreak(editor) {
             editor.paragraphRGAMap.set(id, newParagraph.rga);
           return;
         }
+      }
+      // If inserting break in between text nodes
+      else {
+        /**@type {RGA} */
+        const previousRGA = paragraph.rga;
+        const newRGAHead = previousRGA.findRGANodeAt(offset);
+        insertBreak();
+        const newSelection = editor.selection;
+        const [newParagraph, paragraphPath] = findParagraphNodeEntryAt(
+          editor,
+          newSelection
+        );
+        const newRGA = new RGA();
+        const newCharMap = newRGA.chracterLinkedNodeMap;
+
+        // Insert non-tombstoned rga nodes to the new RGA linked list
+        let current = newRGAHead;
+        while (current != null) {
+          if (!current.data.isTombStoned) {
+            // increase local vector clock
+            vc.increment(editor.vectorClock, editor.peerId);
+            const characterNode = new CharacterNode(
+              current.data.char,
+              editor.peerId
+            );
+            setCharacterId(characterNode, editor);
+            newRGA.list.insert(characterNode);
+            newCharMap.set(characterNode.id, current);
+          }
+          current = current.next;
+        }
+
+        // Remove splitted rga nodes in previous linked list
+        let removeStop = newRGAHead.prev;
+        let deletedLinkedNode = previousRGA.list.tail;
+        while (deletedLinkedNode !== removeStop) {
+          // Mark nodes after the splitting position to be deleted
+          if (!deletedLinkedNode.data.isTombStoned) {
+            deletedLinkedNode.data.isTombStoned = true;
+            previousRGA.list.tombStoneCount++;
+          }
+
+          deletedLinkedNode = deletedLinkedNode.prev;
+        }
+
+        Transforms.setNodes(
+          editor,
+          { id: cuid(), rga: newRGA },
+          { at: paragraphPath }
+        );
+        return;
       }
     }
     insertBreak();
