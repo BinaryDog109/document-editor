@@ -260,7 +260,7 @@ export function mapOperationsFromSlate(editor, slateOps) {
          type: "insert_node"
        */
       slateOp.type === "insert_node" &&
-      slateOp.node.type === "paragraph"
+      isOneOfParagraphTypes(slateOp.node)
     ) {
       const paragraph = slateOp.node;
       // handle inserting a new paragraph (insert break)
@@ -289,7 +289,7 @@ export function mapOperationsFromSlate(editor, slateOps) {
          type: "merge_node"
        */
     else if (
-      (slateOp.type === "remove_node" && slateOp.node.type === "paragraph") ||
+      (slateOp.type === "remove_node" && isOneOfParagraphTypes(slateOp.node)) ||
       (slateOp.type === "merge_node" &&
         isOneOfParagraphTypes(slateOp.properties) &&
         isParagraphRGAEmpty(slateOp.properties.rga))
